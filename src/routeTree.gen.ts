@@ -14,6 +14,7 @@ import { Route as SourcesIndexRouteImport } from './routes/sources.index'
 import { Route as SourcesSplatRouteImport } from './routes/sources.$'
 import { Route as ApiPublicDownloadSourcesRouteImport } from './routes/api/public/download-sources'
 import { Route as ApiPublicCatalogueCategoryRouteImport } from './routes/api/public/catalogue/$category'
+import { Route as ApiPublicCatalogueFiltersRouteImport } from './routes/api/public/catalogue/filters'
 import { Route as ApiPublicCatalogueSearchRouteImport } from './routes/api/public/catalogue/search'
 import { Route as ApiPublicDownloadSourcesSyncRouteImport } from './routes/api/public/download-sources.sync'
 import { Route as ApiPublicGamesShopDetailsRouteImport } from './routes/api/public/games/shop-details'
@@ -49,6 +50,12 @@ const ApiPublicCatalogueCategoryRoute =
   ApiPublicCatalogueCategoryRouteImport.update({
     id: '/api/public/catalogue/$category',
     path: '/api/public/catalogue/$category',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCatalogueFiltersRoute =
+  ApiPublicCatalogueFiltersRouteImport.update({
+    id: '/api/public/catalogue/filters',
+    path: '/api/public/catalogue/filters',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicCatalogueSearchRoute =
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/sources/': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
@@ -128,6 +136,7 @@ export interface FileRoutesByTo {
   '/sources': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
@@ -145,6 +154,7 @@ export interface FileRoutesById {
   '/sources/': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/sources/'
     | '/api/public/download-sources'
     | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/api/public/download-sources'
     | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
     | '/sources/'
     | '/api/public/download-sources'
     | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
@@ -212,6 +225,7 @@ export interface RootRouteChildren {
   SourcesIndexRoute: typeof SourcesIndexRoute
   ApiPublicDownloadSourcesRoute: typeof ApiPublicDownloadSourcesRouteWithChildren
   ApiPublicCatalogueCategoryRoute: typeof ApiPublicCatalogueCategoryRoute
+  ApiPublicCatalogueFiltersRoute: typeof ApiPublicCatalogueFiltersRoute
   ApiPublicCatalogueSearchRoute: typeof ApiPublicCatalogueSearchRoute
   ApiPublicGamesShopDetailsRoute: typeof ApiPublicGamesShopDetailsRoute
   ApiPublicHostersAvailabilityRoute: typeof ApiPublicHostersAvailabilityRoute
@@ -254,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/catalogue/$category'
       fullPath: '/api/public/catalogue/$category'
       preLoaderRoute: typeof ApiPublicCatalogueCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/catalogue/filters': {
+      id: '/api/public/catalogue/filters'
+      path: '/api/public/catalogue/filters'
+      fullPath: '/api/public/catalogue/filters'
+      preLoaderRoute: typeof ApiPublicCatalogueFiltersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/catalogue/search': {
@@ -362,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesIndexRoute: SourcesIndexRoute,
   ApiPublicDownloadSourcesRoute: ApiPublicDownloadSourcesRouteWithChildren,
   ApiPublicCatalogueCategoryRoute: ApiPublicCatalogueCategoryRoute,
+  ApiPublicCatalogueFiltersRoute: ApiPublicCatalogueFiltersRoute,
   ApiPublicCatalogueSearchRoute: ApiPublicCatalogueSearchRoute,
   ApiPublicGamesShopDetailsRoute: ApiPublicGamesShopDetailsRoute,
   ApiPublicHostersAvailabilityRoute: ApiPublicHostersAvailabilityRoute,
