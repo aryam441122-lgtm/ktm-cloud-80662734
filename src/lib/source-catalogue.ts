@@ -106,33 +106,54 @@ export const getSourceGames = async (
 
 const appIdCache = new Map<string, string | null>();
 
+const searchSteamStore = async (term: string) => {
+  const res = await fetch(
+    `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(
+      term
+    )}&cc=us&l=en`
+  );
+  if (!res.ok) return [];
+  const body = (await res.json()) as { items?: { id: number; name: string }[] };
+  return body.items ?? [];
+};
+
+/** Progressively simpler variants so odd repack titles still match Steam. */
+const titleVariants = (title: string): string[] => {
+  const variants = [title];
+  const dash = title.split(/\s+[–—:-]\s+/)[0];
+  if (dash && dash !== title) variants.push(dash);
+  const noVr = title.replace(/\s+VR$/i, "");
+  if (noVr !== title) variants.push(noVr);
+  const words = title.split(/\s+/);
+  if (words.length > 3) variants.push(words.slice(0, 3).join(" "));
+  return [...new Set(variants.filter((v) => v.trim().length > 1))];
+};
+
 /** Resolves a Steam appid for a title so covers/hero images render. */
 export const resolveSteamAppId = async (title: string): Promise<string | null> => {
   const key = normalizeTitle(title);
   if (appIdCache.has(key)) return appIdCache.get(key) ?? null;
 
   try {
-    const res = await fetch(
-      `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(
-        title
-      )}&cc=us&l=en`
-    );
-    if (!res.ok) {
-      appIdCache.set(key, null);
-      return null;
+    for (const variant of titleVariants(title)) {
+      const items = await searchSteamStore(variant);
+      if (!items.length) continue;
+      const exact = items.find((i) => normalizeTitle(i.name) === key);
+      const chosen = exact ?? items[0];
+      if (chosen) {
+        const id = String(chosen.id);
+        appIdCache.set(key, id);
+        return id;
+      }
     }
-    const body = (await res.json()) as { items?: { id: number; name: string }[] };
-    const items = body.items ?? [];
-    const exact = items.find((i) => normalizeTitle(i.name) === key);
-    const chosen = exact ?? items[0];
-    const id = chosen ? String(chosen.id) : null;
-    appIdCache.set(key, id);
-    return id;
+    appIdCache.set(key, null);
+    return null;
   } catch {
     appIdCache.set(key, null);
     return null;
   }
 };
+
 
 export const resolveAppIds = async (titles: string[]) =>
   Promise.all(titles.map((t) => resolveSteamAppId(t)));
