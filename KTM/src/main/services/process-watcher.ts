@@ -147,7 +147,7 @@ const logPlaytimeTrace = (
 const getGameExecutables = async () => {
   const gameExecutables = (
     await axios
-      .get(import.meta.env.MAIN_VITE_API_URL + "/catalogue/steam/executables")
+      .get(apiUrl + "/catalogue/steam/executables")
       .catch(() => {
         return { data: {} };
       })

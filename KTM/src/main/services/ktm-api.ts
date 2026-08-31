@@ -177,7 +177,7 @@ export class KTMApi {
 
   static async setupApi() {
     this.instance = axios.create({
-      baseURL: import.meta.env.MAIN_VITE_API_URL,
+      baseURL: apiUrl,
       headers: { "User-Agent": `KTM Launcher v${appVersion}` },
     });
 
