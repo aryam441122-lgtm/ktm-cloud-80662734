@@ -5,7 +5,7 @@ import { uploadGamesBatch } from "./library-sync";
 import { clearGamesRemoteIds } from "./library-sync/clear-games-remote-id";
 import { networkLogger as logger } from "./logger";
 import { UserNotLoggedInError, SubscriptionRequiredError } from "@shared";
-import { appVersion } from "@main/constants";
+import { apiUrl, appVersion } from "@main/constants";
 import { getUserData } from "./user/get-user-data";
 import { db } from "@main/level";
 import { levelKeys } from "@main/level/sublevels";
@@ -177,7 +177,7 @@ export class KTMApi {
 
   static async setupApi() {
     this.instance = axios.create({
-      baseURL: import.meta.env.MAIN_VITE_API_URL,
+      baseURL: apiUrl,
       headers: { "User-Agent": `KTM Launcher v${appVersion}` },
     });
 

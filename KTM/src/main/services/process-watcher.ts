@@ -10,7 +10,7 @@ import { PowerSaveBlockerManager } from "./power-save-blocker";
 import path from "node:path";
 import { AchievementWatcherManager } from "./achievements/achievement-watcher-manager";
 import { abortAchievementMetadataExport } from "./achievements/metadata-export";
-import { INTERVALS } from "@main/constants";
+import { apiUrl, INTERVALS } from "@main/constants";
 import { Wine } from "./wine";
 import { NativeAddon } from "./native-addon";
 import { emulatorSessions } from "./emulators/emulator-session-tracker";
@@ -147,7 +147,7 @@ const logPlaytimeTrace = (
 const getGameExecutables = async () => {
   const gameExecutables = (
     await axios
-      .get(import.meta.env.MAIN_VITE_API_URL + "/catalogue/steam/executables")
+      .get(apiUrl + "/catalogue/steam/executables")
       .catch(() => {
         return { data: {} };
       })
