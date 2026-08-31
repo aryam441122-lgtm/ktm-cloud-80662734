@@ -5,7 +5,7 @@ import { uploadGamesBatch } from "./library-sync";
 import { clearGamesRemoteIds } from "./library-sync/clear-games-remote-id";
 import { networkLogger as logger } from "./logger";
 import { UserNotLoggedInError, SubscriptionRequiredError } from "@shared";
-import { appVersion } from "@main/constants";
+import { apiUrl, appVersion } from "@main/constants";
 import { getUserData } from "./user/get-user-data";
 import { db } from "@main/level";
 import { levelKeys } from "@main/level/sublevels";
