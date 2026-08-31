@@ -386,12 +386,14 @@ export class KTMApi {
   public static readonly LEGACY_CLOUD_ENABLED = false;
 
   private static async validateOptions(options?: KTMApiOptions) {
-    if (!KTMApi.LEGACY_CLOUD_ENABLED) {
-      throw new UserNotLoggedInError();
-    }
-
     const needsAuth = options?.needsAuth == undefined || options.needsAuth;
     const needsSubscription = options?.needsSubscription === true;
+
+    // The legacy account backend is disabled, but catalogue, artwork and
+    // download-source endpoints are public and must remain available.
+    if (!KTMApi.LEGACY_CLOUD_ENABLED && needsAuth) {
+      throw new UserNotLoggedInError();
+    }
 
     if (needsAuth) {
       if (!this.isLoggedIn()) throw new UserNotLoggedInError();
