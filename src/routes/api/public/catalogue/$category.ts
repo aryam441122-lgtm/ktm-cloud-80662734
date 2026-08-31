@@ -1,45 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  buildSteamAssets,
-  getFeatured,
-  json,
-  options204,
-} from "@/lib/steam-catalogue";
-
-const CATEGORY_MAP: Record<string, string[]> = {
-  hot: ["top_sellers", "specials", "new_releases"],
-  weekly: ["specials", "new_releases", "top_sellers"],
-  achievements: ["new_releases", "top_sellers", "specials"],
-};
+import { buildSteamAssets, json, options204 } from "@/lib/steam-catalogue";
+import { getSourceGames, resolveAppIds } from "@/lib/source-catalogue";
 
 export const Route = createFileRoute("/api/public/catalogue/$category")({
   server: {
     handlers: {
       OPTIONS: async () => options204(),
-      GET: async ({ params, request }) => {
+      GET: async ({ request }) => {
         const url = new URL(request.url);
         const take = Math.min(Number(url.searchParams.get("take") ?? 12) || 12, 50);
         const skip = Math.max(Number(url.searchParams.get("skip") ?? 0) || 0, 0);
 
-        const keys = CATEGORY_MAP[params.category] ?? CATEGORY_MAP['hot'] ?? [];
+        const rawIds = url.searchParams.getAll("downloadSourceIds");
+        const sourceIds = rawIds.length > 0 ? rawIds : null;
 
         try {
-          const featured = await getFeatured();
-          const seen = new Set<number>();
-          const items: { id: number; name: string }[] = [];
-
-          for (const key of keys) {
-            for (const item of featured[key] ?? []) {
-              if (seen.has(item.id)) continue;
-              seen.add(item.id);
-              items.push(item);
-            }
-          }
+          const games = await getSourceGames(url.origin, sourceIds);
+          const page = games.slice(skip, skip + take);
+          const appIds = await resolveAppIds(page.map((g) => g.title));
 
           return json(
-            items
-              .slice(skip, skip + take)
-              .map((item) => buildSteamAssets(String(item.id), item.name))
+            page.map((game, index) => {
+              const appId = appIds[index];
+              if (!appId) {
+                return {
+                  objectId: game.normalized.replace(/\s+/g, "-"),
+                  shop: "steam",
+                  title: game.title,
+                  iconUrl: null,
+                  libraryHeroImageUrl: null,
+                  libraryImageUrl: null,
+                  logoImageUrl: null,
+                  logoPosition: null,
+                  coverImageUrl: null,
+                  downloadSources: [game.sourceName],
+                };
+              }
+              return buildSteamAssets(appId, game.title, [game.sourceName]);
+            })
           );
         } catch {
           return json([]);
