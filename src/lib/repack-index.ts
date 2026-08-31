@@ -21,7 +21,7 @@ export interface RepackEntry {
   createdAt: string;
 }
 
-const SOURCES: { key: string; path: string }[] = [
+export const SOURCES: { key: string; path: string }[] = [
   { key: "steamrip", path: "/sources/steamrip.json" },
   { key: "onlinefix", path: "/sources/onlinefix.json" },
   { key: "gog", path: "/sources/gog.json" },
@@ -38,7 +38,7 @@ export const normalizeTitle = (value: string) =>
 const cache = new Map<string, { at: number; entries: RepackEntry[] }>();
 const TTL = 1000 * 60 * 60;
 
-const loadSource = async (
+export const loadSource = async (
   origin: string,
   key: string,
   path: string
