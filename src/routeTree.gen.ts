@@ -18,6 +18,7 @@ import { Route as ApiPublicCatalogueSearchRouteImport } from './routes/api/publi
 import { Route as ApiPublicDownloadSourcesSyncRouteImport } from './routes/api/public/download-sources.sync'
 import { Route as ApiPublicGamesShopDetailsRouteImport } from './routes/api/public/games/shop-details'
 import { Route as ApiPublicHostersAvailabilityRouteImport } from './routes/api/public/hosters/availability'
+import { Route as ApiPublicCatalogueSteamResourceRouteImport } from './routes/api/public/catalogue/steam.$resource'
 import { Route as ApiPublicGamesShopObjectIdRouteImport } from './routes/api/public/games/$shop/$objectId'
 import { Route as ApiPublicGamesShopObjectIdAssetsRouteImport } from './routes/api/public/games/$shop/$objectId/assets'
 import { Route as ApiPublicGamesShopObjectIdDownloadSourcesRouteImport } from './routes/api/public/games/$shop/$objectId/download-sources'
@@ -74,6 +75,12 @@ const ApiPublicHostersAvailabilityRoute =
     path: '/api/public/hosters/availability',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCatalogueSteamResourceRoute =
+  ApiPublicCatalogueSteamResourceRouteImport.update({
+    id: '/api/public/catalogue/steam/$resource',
+    path: '/api/public/catalogue/steam/$resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicGamesShopObjectIdRoute =
   ApiPublicGamesShopObjectIdRouteImport.update({
     id: '/api/public/games/$shop/$objectId',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
   '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/catalogue/steam/$resource': typeof ApiPublicCatalogueSteamResourceRoute
   '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
   '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
   '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
   '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/catalogue/steam/$resource': typeof ApiPublicCatalogueSteamResourceRoute
   '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
   '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
   '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
   '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
   '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/catalogue/steam/$resource': typeof ApiPublicCatalogueSteamResourceRoute
   '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
   '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
   '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
     | '/api/public/hosters/availability'
+    | '/api/public/catalogue/steam/$resource'
     | '/api/public/games/$shop/$objectId'
     | '/api/public/games/$shop/$objectId/assets'
     | '/api/public/games/$shop/$objectId/download-sources'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
     | '/api/public/hosters/availability'
+    | '/api/public/catalogue/steam/$resource'
     | '/api/public/games/$shop/$objectId'
     | '/api/public/games/$shop/$objectId/assets'
     | '/api/public/games/$shop/$objectId/download-sources'
@@ -187,6 +199,7 @@ export interface FileRouteTypes {
     | '/api/public/download-sources/sync'
     | '/api/public/games/shop-details'
     | '/api/public/hosters/availability'
+    | '/api/public/catalogue/steam/$resource'
     | '/api/public/games/$shop/$objectId'
     | '/api/public/games/$shop/$objectId/assets'
     | '/api/public/games/$shop/$objectId/download-sources'
@@ -202,6 +215,7 @@ export interface RootRouteChildren {
   ApiPublicCatalogueSearchRoute: typeof ApiPublicCatalogueSearchRoute
   ApiPublicGamesShopDetailsRoute: typeof ApiPublicGamesShopDetailsRoute
   ApiPublicHostersAvailabilityRoute: typeof ApiPublicHostersAvailabilityRoute
+  ApiPublicCatalogueSteamResourceRoute: typeof ApiPublicCatalogueSteamResourceRoute
   ApiPublicGamesShopObjectIdRoute: typeof ApiPublicGamesShopObjectIdRouteWithChildren
 }
 
@@ -268,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hosters/availability'
       fullPath: '/api/public/hosters/availability'
       preLoaderRoute: typeof ApiPublicHostersAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/catalogue/steam/$resource': {
+      id: '/api/public/catalogue/steam/$resource'
+      path: '/api/public/catalogue/steam/$resource'
+      fullPath: '/api/public/catalogue/steam/$resource'
+      preLoaderRoute: typeof ApiPublicCatalogueSteamResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/games/$shop/$objectId': {
@@ -344,6 +365,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCatalogueSearchRoute: ApiPublicCatalogueSearchRoute,
   ApiPublicGamesShopDetailsRoute: ApiPublicGamesShopDetailsRoute,
   ApiPublicHostersAvailabilityRoute: ApiPublicHostersAvailabilityRoute,
+  ApiPublicCatalogueSteamResourceRoute: ApiPublicCatalogueSteamResourceRoute,
   ApiPublicGamesShopObjectIdRoute: ApiPublicGamesShopObjectIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
