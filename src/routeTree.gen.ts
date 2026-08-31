@@ -10,33 +10,199 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SourcesIndexRouteImport } from './routes/sources.index'
+import { Route as SourcesSplatRouteImport } from './routes/sources.$'
+import { Route as ApiPublicDownloadSourcesRouteImport } from './routes/api/public/download-sources'
+import { Route as ApiPublicCatalogueCategoryRouteImport } from './routes/api/public/catalogue/$category'
+import { Route as ApiPublicCatalogueSearchRouteImport } from './routes/api/public/catalogue/search'
+import { Route as ApiPublicDownloadSourcesSyncRouteImport } from './routes/api/public/download-sources.sync'
+import { Route as ApiPublicGamesShopDetailsRouteImport } from './routes/api/public/games/shop-details'
+import { Route as ApiPublicHostersAvailabilityRouteImport } from './routes/api/public/hosters/availability'
+import { Route as ApiPublicGamesShopObjectIdRouteImport } from './routes/api/public/games/$shop/$objectId'
+import { Route as ApiPublicGamesShopObjectIdAssetsRouteImport } from './routes/api/public/games/$shop/$objectId/assets'
+import { Route as ApiPublicGamesShopObjectIdDownloadSourcesRouteImport } from './routes/api/public/games/$shop/$objectId/download-sources'
+import { Route as ApiPublicGamesShopObjectIdStatsRouteImport } from './routes/api/public/games/$shop/$objectId/stats'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesIndexRoute = SourcesIndexRouteImport.update({
+  id: '/sources/',
+  path: '/sources/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesSplatRoute = SourcesSplatRouteImport.update({
+  id: '/sources/$',
+  path: '/sources/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicDownloadSourcesRoute =
+  ApiPublicDownloadSourcesRouteImport.update({
+    id: '/api/public/download-sources',
+    path: '/api/public/download-sources',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCatalogueCategoryRoute =
+  ApiPublicCatalogueCategoryRouteImport.update({
+    id: '/api/public/catalogue/$category',
+    path: '/api/public/catalogue/$category',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCatalogueSearchRoute =
+  ApiPublicCatalogueSearchRouteImport.update({
+    id: '/api/public/catalogue/search',
+    path: '/api/public/catalogue/search',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDownloadSourcesSyncRoute =
+  ApiPublicDownloadSourcesSyncRouteImport.update({
+    id: '/sync',
+    path: '/sync',
+    getParentRoute: () => ApiPublicDownloadSourcesRoute,
+  } as any)
+const ApiPublicGamesShopDetailsRoute =
+  ApiPublicGamesShopDetailsRouteImport.update({
+    id: '/api/public/games/shop-details',
+    path: '/api/public/games/shop-details',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHostersAvailabilityRoute =
+  ApiPublicHostersAvailabilityRouteImport.update({
+    id: '/api/public/hosters/availability',
+    path: '/api/public/hosters/availability',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicGamesShopObjectIdRoute =
+  ApiPublicGamesShopObjectIdRouteImport.update({
+    id: '/api/public/games/$shop/$objectId',
+    path: '/api/public/games/$shop/$objectId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicGamesShopObjectIdAssetsRoute =
+  ApiPublicGamesShopObjectIdAssetsRouteImport.update({
+    id: '/assets',
+    path: '/assets',
+    getParentRoute: () => ApiPublicGamesShopObjectIdRoute,
+  } as any)
+const ApiPublicGamesShopObjectIdDownloadSourcesRoute =
+  ApiPublicGamesShopObjectIdDownloadSourcesRouteImport.update({
+    id: '/download-sources',
+    path: '/download-sources',
+    getParentRoute: () => ApiPublicGamesShopObjectIdRoute,
+  } as any)
+const ApiPublicGamesShopObjectIdStatsRoute =
+  ApiPublicGamesShopObjectIdStatsRouteImport.update({
+    id: '/stats',
+    path: '/stats',
+    getParentRoute: () => ApiPublicGamesShopObjectIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sources/$': typeof SourcesSplatRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
+  '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
+  '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
+  '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
+  '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
+  '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
+  '/api/public/games/$shop/$objectId/stats': typeof ApiPublicGamesShopObjectIdStatsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sources/$': typeof SourcesSplatRoute
+  '/sources': typeof SourcesIndexRoute
+  '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
+  '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
+  '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
+  '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
+  '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
+  '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
+  '/api/public/games/$shop/$objectId/stats': typeof ApiPublicGamesShopObjectIdStatsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sources/$': typeof SourcesSplatRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
+  '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRoute
+  '/api/public/download-sources/sync': typeof ApiPublicDownloadSourcesSyncRoute
+  '/api/public/games/shop-details': typeof ApiPublicGamesShopDetailsRoute
+  '/api/public/hosters/availability': typeof ApiPublicHostersAvailabilityRoute
+  '/api/public/games/$shop/$objectId': typeof ApiPublicGamesShopObjectIdRouteWithChildren
+  '/api/public/games/$shop/$objectId/assets': typeof ApiPublicGamesShopObjectIdAssetsRoute
+  '/api/public/games/$shop/$objectId/download-sources': typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
+  '/api/public/games/$shop/$objectId/stats': typeof ApiPublicGamesShopObjectIdStatsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/sources/$'
+    | '/sources/'
+    | '/api/public/download-sources'
+    | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/search'
+    | '/api/public/download-sources/sync'
+    | '/api/public/games/shop-details'
+    | '/api/public/hosters/availability'
+    | '/api/public/games/$shop/$objectId'
+    | '/api/public/games/$shop/$objectId/assets'
+    | '/api/public/games/$shop/$objectId/download-sources'
+    | '/api/public/games/$shop/$objectId/stats'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/sources/$'
+    | '/sources'
+    | '/api/public/download-sources'
+    | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/search'
+    | '/api/public/download-sources/sync'
+    | '/api/public/games/shop-details'
+    | '/api/public/hosters/availability'
+    | '/api/public/games/$shop/$objectId'
+    | '/api/public/games/$shop/$objectId/assets'
+    | '/api/public/games/$shop/$objectId/download-sources'
+    | '/api/public/games/$shop/$objectId/stats'
+  id:
+    | '__root__'
+    | '/'
+    | '/sources/$'
+    | '/sources/'
+    | '/api/public/download-sources'
+    | '/api/public/catalogue/$category'
+    | '/api/public/catalogue/search'
+    | '/api/public/download-sources/sync'
+    | '/api/public/games/shop-details'
+    | '/api/public/hosters/availability'
+    | '/api/public/games/$shop/$objectId'
+    | '/api/public/games/$shop/$objectId/assets'
+    | '/api/public/games/$shop/$objectId/download-sources'
+    | '/api/public/games/$shop/$objectId/stats'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SourcesSplatRoute: typeof SourcesSplatRoute
+  SourcesIndexRoute: typeof SourcesIndexRoute
+  ApiPublicDownloadSourcesRoute: typeof ApiPublicDownloadSourcesRouteWithChildren
+  ApiPublicCatalogueCategoryRoute: typeof ApiPublicCatalogueCategoryRoute
+  ApiPublicCatalogueSearchRoute: typeof ApiPublicCatalogueSearchRoute
+  ApiPublicGamesShopDetailsRoute: typeof ApiPublicGamesShopDetailsRoute
+  ApiPublicHostersAvailabilityRoute: typeof ApiPublicHostersAvailabilityRoute
+  ApiPublicGamesShopObjectIdRoute: typeof ApiPublicGamesShopObjectIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +214,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/': {
+      id: '/sources/'
+      path: '/sources'
+      fullPath: '/sources/'
+      preLoaderRoute: typeof SourcesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources/$': {
+      id: '/sources/$'
+      path: '/sources/$'
+      fullPath: '/sources/$'
+      preLoaderRoute: typeof SourcesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/download-sources': {
+      id: '/api/public/download-sources'
+      path: '/api/public/download-sources'
+      fullPath: '/api/public/download-sources'
+      preLoaderRoute: typeof ApiPublicDownloadSourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/catalogue/$category': {
+      id: '/api/public/catalogue/$category'
+      path: '/api/public/catalogue/$category'
+      fullPath: '/api/public/catalogue/$category'
+      preLoaderRoute: typeof ApiPublicCatalogueCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/catalogue/search': {
+      id: '/api/public/catalogue/search'
+      path: '/api/public/catalogue/search'
+      fullPath: '/api/public/catalogue/search'
+      preLoaderRoute: typeof ApiPublicCatalogueSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/download-sources/sync': {
+      id: '/api/public/download-sources/sync'
+      path: '/sync'
+      fullPath: '/api/public/download-sources/sync'
+      preLoaderRoute: typeof ApiPublicDownloadSourcesSyncRouteImport
+      parentRoute: typeof ApiPublicDownloadSourcesRoute
+    }
+    '/api/public/games/shop-details': {
+      id: '/api/public/games/shop-details'
+      path: '/api/public/games/shop-details'
+      fullPath: '/api/public/games/shop-details'
+      preLoaderRoute: typeof ApiPublicGamesShopDetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hosters/availability': {
+      id: '/api/public/hosters/availability'
+      path: '/api/public/hosters/availability'
+      fullPath: '/api/public/hosters/availability'
+      preLoaderRoute: typeof ApiPublicHostersAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/games/$shop/$objectId': {
+      id: '/api/public/games/$shop/$objectId'
+      path: '/api/public/games/$shop/$objectId'
+      fullPath: '/api/public/games/$shop/$objectId'
+      preLoaderRoute: typeof ApiPublicGamesShopObjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/games/$shop/$objectId/assets': {
+      id: '/api/public/games/$shop/$objectId/assets'
+      path: '/assets'
+      fullPath: '/api/public/games/$shop/$objectId/assets'
+      preLoaderRoute: typeof ApiPublicGamesShopObjectIdAssetsRouteImport
+      parentRoute: typeof ApiPublicGamesShopObjectIdRoute
+    }
+    '/api/public/games/$shop/$objectId/download-sources': {
+      id: '/api/public/games/$shop/$objectId/download-sources'
+      path: '/download-sources'
+      fullPath: '/api/public/games/$shop/$objectId/download-sources'
+      preLoaderRoute: typeof ApiPublicGamesShopObjectIdDownloadSourcesRouteImport
+      parentRoute: typeof ApiPublicGamesShopObjectIdRoute
+    }
+    '/api/public/games/$shop/$objectId/stats': {
+      id: '/api/public/games/$shop/$objectId/stats'
+      path: '/stats'
+      fullPath: '/api/public/games/$shop/$objectId/stats'
+      preLoaderRoute: typeof ApiPublicGamesShopObjectIdStatsRouteImport
+      parentRoute: typeof ApiPublicGamesShopObjectIdRoute
+    }
   }
 }
 
+interface ApiPublicDownloadSourcesRouteChildren {
+  ApiPublicDownloadSourcesSyncRoute: typeof ApiPublicDownloadSourcesSyncRoute
+}
+
+const ApiPublicDownloadSourcesRouteChildren: ApiPublicDownloadSourcesRouteChildren =
+  {
+    ApiPublicDownloadSourcesSyncRoute: ApiPublicDownloadSourcesSyncRoute,
+  }
+
+const ApiPublicDownloadSourcesRouteWithChildren =
+  ApiPublicDownloadSourcesRoute._addFileChildren(
+    ApiPublicDownloadSourcesRouteChildren,
+  )
+
+interface ApiPublicGamesShopObjectIdRouteChildren {
+  ApiPublicGamesShopObjectIdAssetsRoute: typeof ApiPublicGamesShopObjectIdAssetsRoute
+  ApiPublicGamesShopObjectIdDownloadSourcesRoute: typeof ApiPublicGamesShopObjectIdDownloadSourcesRoute
+  ApiPublicGamesShopObjectIdStatsRoute: typeof ApiPublicGamesShopObjectIdStatsRoute
+}
+
+const ApiPublicGamesShopObjectIdRouteChildren: ApiPublicGamesShopObjectIdRouteChildren =
+  {
+    ApiPublicGamesShopObjectIdAssetsRoute:
+      ApiPublicGamesShopObjectIdAssetsRoute,
+    ApiPublicGamesShopObjectIdDownloadSourcesRoute:
+      ApiPublicGamesShopObjectIdDownloadSourcesRoute,
+    ApiPublicGamesShopObjectIdStatsRoute: ApiPublicGamesShopObjectIdStatsRoute,
+  }
+
+const ApiPublicGamesShopObjectIdRouteWithChildren =
+  ApiPublicGamesShopObjectIdRoute._addFileChildren(
+    ApiPublicGamesShopObjectIdRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SourcesSplatRoute: SourcesSplatRoute,
+  SourcesIndexRoute: SourcesIndexRoute,
+  ApiPublicDownloadSourcesRoute: ApiPublicDownloadSourcesRouteWithChildren,
+  ApiPublicCatalogueCategoryRoute: ApiPublicCatalogueCategoryRoute,
+  ApiPublicCatalogueSearchRoute: ApiPublicCatalogueSearchRoute,
+  ApiPublicGamesShopDetailsRoute: ApiPublicGamesShopDetailsRoute,
+  ApiPublicHostersAvailabilityRoute: ApiPublicHostersAvailabilityRoute,
+  ApiPublicGamesShopObjectIdRoute: ApiPublicGamesShopObjectIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
