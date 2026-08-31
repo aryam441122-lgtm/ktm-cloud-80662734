@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { buildSteamAssets, json, options204 } from "@/lib/steam-catalogue";
 import {
-  buildSteamAssets,
-  getFeatured,
-  json,
-  options204,
-  searchSteam,
-} from "@/lib/steam-catalogue";
+  getSourceGames,
+  readSourceIds,
+  resolveAppIds,
+} from "@/lib/source-catalogue";
+import { normalizeTitle } from "@/lib/repack-index";
 
 export const Route = createFileRoute("/api/public/catalogue/search")({
   server: {
@@ -19,42 +19,41 @@ export const Route = createFileRoute("/api/public/catalogue/search")({
           body = {};
         }
 
-        const title = typeof body['title'] === "string" ? (body['title'] as string).trim() : "";
+        const title =
+          typeof body['title'] === "string" ? (body['title'] as string).trim() : "";
         const take = Math.min(Number(body['take'] ?? 24) || 24, 60);
         const skip = Math.max(Number(body['skip'] ?? 0) || 0, 0);
+        const sourceIds = readSourceIds(body['downloadSourceIds']);
 
         try {
-          let items: { id: number; name: string }[] = [];
+          const origin = new URL(request.url).origin;
+          let games = await getSourceGames(origin, sourceIds);
 
           if (title.length > 0) {
-            items = await searchSteam(title);
-          } else {
-            const featured = await getFeatured();
-            const seen = new Set<number>();
-            for (const key of ["top_sellers", "new_releases", "specials", "coming_soon"]) {
-              for (const item of featured[key] ?? []) {
-                if (seen.has(item.id)) continue;
-                seen.add(item.id);
-                items.push(item);
-              }
-            }
+            const target = normalizeTitle(title);
+            games = games.filter((game) => game.normalized.includes(target));
           }
 
-          const page = items.slice(skip, skip + take);
+          const page = games.slice(skip, skip + take);
+          const appIds = await resolveAppIds(page.map((g) => g.title));
 
           return json({
-            count: items.length,
-            edges: page.map((item) => {
-              const assets = buildSteamAssets(String(item.id), item.name);
+            count: games.length,
+            edges: page.map((game, index) => {
+              const appId = appIds[index];
+              const objectId = appId ?? game.normalized.replace(/\s+/g, "-");
+              const assets = appId ? buildSteamAssets(appId, game.title) : null;
+
               return {
-                id: `steam:${item.id}`,
-                objectId: String(item.id),
-                title: item.name,
+                id: `steam:${objectId}`,
+                objectId,
+                title: game.title,
                 shop: "steam",
                 genres: [],
                 releaseYear: null,
-                libraryImageUrl: assets.libraryImageUrl,
-                downloadSources: [],
+                libraryImageUrl: assets?.libraryImageUrl ?? null,
+                coverImageUrl: assets?.coverImageUrl ?? null,
+                downloadSources: [game.sourceName],
               };
             }),
           });
