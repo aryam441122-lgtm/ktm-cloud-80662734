@@ -75,7 +75,8 @@ export function useCatalogue() {
   const getDownloadSources = useCallback(() => {
     levelDBService.values("downloadSources").then((results) => {
       const sources = results as DownloadSource[];
-      setDownloadSources(sources.filter((source) => !!source.fingerprint));
+      // Locally added JSON sources have no fingerprint; they are still valid.
+      setDownloadSources(sources.filter((source) => !!source?.url));
     });
   }, []);
 

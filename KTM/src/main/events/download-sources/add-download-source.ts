@@ -79,6 +79,8 @@ const addDownloadSource = async (
 
   await downloadSourcesSublevel.put(downloadSource.id, {
     ...downloadSource,
+    // Keep a stable fingerprint so catalogue filtering can reference the source.
+    fingerprint: downloadSource.fingerprint ?? downloadSource.id,
     ...(isRemote ? { isRemote: true as const } : {}),
     createdAt: new Date().toISOString(),
   });
