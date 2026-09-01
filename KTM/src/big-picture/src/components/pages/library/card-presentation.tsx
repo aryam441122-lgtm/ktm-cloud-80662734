@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  buildGameImageFallbacks,
   getGameAchievementProgress,
   resolveImageSource,
 } from "../../../helpers";
@@ -107,7 +108,10 @@ function getPresentationImageSources(
             game.iconUrl,
           ];
 
-    return getResolvedImageSources(horizontalSources);
+    return getResolvedImageSources([
+      ...horizontalSources,
+      ...buildGameImageFallbacks(game, "hero"),
+    ]);
   }
 
   return getResolvedImageSources([
@@ -115,6 +119,7 @@ function getPresentationImageSources(
     game.coverImageUrl,
     game.libraryImageUrl,
     game.iconUrl,
+    ...buildGameImageFallbacks(game, "cover"),
   ]);
 }
 

@@ -43,6 +43,7 @@ import {
 import {
   getGameHorizontalImageSource,
   getPreferredGameAssets,
+  buildGameImageFallbacks,
   getItemFocusTarget,
   getBigPictureGameAchievementsPath,
 } from "../../helpers";
@@ -643,6 +644,15 @@ function SidebarLibrary({
                         subtitle={status}
                         href={desktopPath}
                         icon={getPreferredGameAssets(game, null).iconUrl}
+                        iconFallbacks={buildGameImageFallbacks(
+                          game,
+                          "icon",
+                          [
+                            getPreferredGameAssets(game, null).iconUrl,
+                            game.libraryImageUrl,
+                            game.coverImageUrl,
+                          ]
+                        )}
                         isFavorite={game.favorite}
                         active={active}
                         focusId={focusId}

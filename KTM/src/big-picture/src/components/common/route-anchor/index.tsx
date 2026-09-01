@@ -2,6 +2,7 @@ import "./styles.scss";
 
 import { HeartStraightIcon } from "@phosphor-icons/react";
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FocusItem } from "..";
 import type { FocusItemActions } from "../../../types";
@@ -11,6 +12,8 @@ export interface RouteAnchorProps
   extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   label: string;
   icon: ReactNode | string;
+  /** Extra image sources tried in order when the main icon fails to load. */
+  iconFallbacks?: string[];
   subtitle?: string | null;
   href: string;
   active?: boolean;
@@ -27,6 +30,7 @@ export const RouteAnchor = ({
   href,
   label,
   icon,
+  iconFallbacks,
   subtitle,
   active = false,
   disabled = false,
@@ -38,7 +42,7 @@ export const RouteAnchor = ({
   onContextMenu,
   ...props
 }: Readonly<RouteAnchorProps>) => {
-  const isGameIcon = typeof icon === "string";
+  const isGameIcon = typeof icon === "string" || Boolean(iconFallbacks?.length);
 
   return (
     <div
@@ -58,12 +62,12 @@ export const RouteAnchor = ({
               className={`route-anchor__icon ${isGameIcon ? "route-anchor__icon--large-size" : "route-anchor__icon--small-size"}`}
             >
               {isGameIcon ? (
-                <img
-                  src={icon}
-                  alt={label}
-                  width={32}
-                  height={32}
-                  draggable={false}
+                <RouteAnchorIcon
+                  sources={[
+                    ...(typeof icon === "string" ? [icon] : []),
+                    ...(iconFallbacks ?? []),
+                  ]}
+                  label={label}
                 />
               ) : (
                 icon
@@ -90,5 +94,48 @@ export const RouteAnchor = ({
         </Link>
       </FocusItem>
     </div>
+  );
+};
+
+interface RouteAnchorIconProps {
+  sources: string[];
+  label: string;
+}
+
+const RouteAnchorIcon = ({ sources, label }: Readonly<RouteAnchorIconProps>) => {
+  const cleanedSources = useMemo(
+    () =>
+      sources
+        .map((source) => (typeof source === "string" ? source.trim() : ""))
+        .filter(
+          (source, index, array) =>
+            source !== "" && array.indexOf(source) === index
+        ),
+    [sources]
+  );
+
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [cleanedSources.join("|")]);
+
+  const src = cleanedSources[Math.min(index, cleanedSources.length - 1)];
+
+  if (!src) return null;
+
+  return (
+    <img
+      src={src}
+      alt={label}
+      width={32}
+      height={32}
+      draggable={false}
+      onError={() => {
+        setIndex((previous) =>
+          previous < cleanedSources.length - 1 ? previous + 1 : previous
+        );
+      }}
+    />
   );
 };

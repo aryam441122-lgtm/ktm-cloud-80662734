@@ -2,12 +2,13 @@ import SteamLogo from "@renderer/assets/steam-logo.svg?react";
 import { LibraryGame } from "@types";
 import cn from "classnames";
 import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmationModal, GameContextMenu, useGameActions } from "..";
 import { HeartFillIcon } from "@primer/octicons-react";
 import { useAppSelector, useToast } from "@renderer/hooks";
 import { useCollectionContextMenu } from "@renderer/context";
+import { buildGameImageFallbacks } from "@renderer/helpers/game-image-fallbacks";
 
 interface SidebarGameItemProps {
   game: LibraryGame;
@@ -54,9 +55,31 @@ export function SidebarGameItem({
   };
 
   const isCustomGame = game.shop === "custom";
-  const sidebarIcon = isCustomGame
-    ? game.libraryImageUrl || game.iconUrl
-    : game.customIconUrl || game.iconUrl;
+
+  const iconSources = useMemo(
+    () =>
+      isCustomGame
+        ? buildGameImageFallbacks(game, "icon", [
+            game.libraryImageUrl,
+            game.iconUrl,
+            game.coverImageUrl,
+          ])
+        : buildGameImageFallbacks(game, "icon", [
+            game.customIconUrl,
+            game.iconUrl,
+            game.libraryImageUrl,
+            game.coverImageUrl,
+          ]),
+    [game, isCustomGame]
+  );
+
+  const [iconIndex, setIconIndex] = useState(0);
+
+  useEffect(() => {
+    setIconIndex(0);
+  }, [iconSources.join("|")]);
+
+  const sidebarIcon = iconSources[Math.min(iconIndex, iconSources.length - 1)];
 
   // Determine fallback icon based on game type
   const getFallbackIcon = () => {
@@ -99,6 +122,11 @@ export function SidebarGameItem({
               src={sidebarIcon}
               alt={game.title}
               loading="lazy"
+              onError={() =>
+                setIconIndex((previous) =>
+                  previous < iconSources.length - 1 ? previous + 1 : previous
+                )
+              }
             />
           ) : (
             getFallbackIcon()
