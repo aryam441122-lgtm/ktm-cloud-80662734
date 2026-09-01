@@ -152,7 +152,8 @@ export async function initializeBigPictureI18n() {
 
   const syncDocumentLanguage = (language: string) => {
     document.documentElement.lang = language;
-    document.documentElement.dir = i18next.dir(language);
+    // Layout stays LTR for every language (including Arabic).
+    document.documentElement.dir = "ltr";
   };
 
   const userPreferences = await electron?.getUserPreferences?.();

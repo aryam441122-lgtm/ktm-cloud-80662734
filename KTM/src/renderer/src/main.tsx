@@ -82,7 +82,9 @@ await clearStateFromPreviousSession();
 
 const syncDocumentLanguage = (language: string) => {
   document.documentElement.lang = language;
-  document.documentElement.dir = i18n.dir(language);
+  // Keep the layout LTR for every language (including Arabic): only the
+  // text is translated, the interface must never mirror itself.
+  document.documentElement.dir = "ltr";
 };
 
 await i18n
