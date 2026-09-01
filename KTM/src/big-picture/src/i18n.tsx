@@ -52,6 +52,19 @@ export function resolveBigPictureLanguage(
 }
 
 /**
+ * True when Big Picture ships a dedicated exact-match table for the active
+ * language. Anything else (Arabic, German, ...) must go through the main app
+ * translations instead of silently rendering English.
+ */
+function hasBigPictureExactTable(
+  language = i18next.resolvedLanguage ?? i18next.language ?? "en"
+) {
+  if (language.startsWith("en")) return true;
+  return resolveBigPictureLanguage(language) !== "en";
+}
+
+
+/**
  * Index of every English string shipped in the main app locales, mapped to its
  * i18next key ("namespace:path"). Big Picture only ships exact-match tables for
  * a handful of languages, so for anything else (Arabic, German, ...) we reuse
