@@ -158,9 +158,11 @@ function translateExactText(value: string) {
   const language = resolveBigPictureLanguage();
   const sourceText = getSourceText(value);
 
-  const exact = hasBigPictureExactTable()
-    ? exactTranslations[language][sourceText]
-    : undefined;
+  const exactTable = exactTranslations[language];
+  const exact =
+    hasBigPictureExactTable() && exactTable
+      ? exactTable[sourceText]
+      : undefined;
   if (exact) {
     rememberReverseTranslation(sourceText, exact);
     return exact;
