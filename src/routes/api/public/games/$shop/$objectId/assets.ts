@@ -1,34 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { buildSteamAssets, json, options204 } from "@/lib/steam-catalogue";
+import { json, options204 } from "@/lib/steam-catalogue";
+import { resolveAssets } from "@/lib/steam-images";
 
 export const Route = createFileRoute("/api/public/games/$shop/$objectId/assets")({
   server: {
     handlers: {
       OPTIONS: async () => options204(),
-      GET: async ({ params }) => {
+      GET: async ({ request, params }) => {
         const { shop, objectId } = params;
+        const url = new URL(request.url);
+        const titleParam = url.searchParams.get("title") ?? "";
 
-        if (shop !== "steam" || !/^\d+$/.test(objectId)) {
-          return json(null);
+        if (shop !== "steam") return json(null);
+
+        // Source-only entries have a slug objectId instead of a Steam appid.
+        if (!/^\d+$/.test(objectId)) {
+          const title = titleParam || objectId.replace(/-/g, " ");
+          return json(await resolveAssets(url.origin, null, title, [], objectId));
         }
 
-        let title = "";
-        try {
-          const res = await fetch(
-            `https://store.steampowered.com/api/appdetails?appids=${objectId}&l=en&filters=basic`
-          );
-          if (res.ok) {
-            const body = (await res.json()) as Record<
-              string,
-              { success?: boolean; data?: { name?: string } }
-            >;
-            title = body?.[objectId]?.data?.name ?? "";
-          }
-        } catch {
-          title = "";
-        }
-
-        return json(buildSteamAssets(objectId, title));
+        return json(await resolveAssets(url.origin, objectId, titleParam));
       },
     },
   },

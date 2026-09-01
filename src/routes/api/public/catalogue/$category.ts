@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { buildSteamAssets, json, options204 } from "@/lib/steam-catalogue";
+import { json, options204 } from "@/lib/steam-catalogue";
 import { getSourceGames, resolveAppIds } from "@/lib/source-catalogue";
+import { resolveAssets } from "@/lib/steam-images";
 
 export const Route = createFileRoute("/api/public/catalogue/$category")({
   server: {
@@ -19,26 +20,19 @@ export const Route = createFileRoute("/api/public/catalogue/$category")({
           const page = games.slice(skip, skip + take);
           const appIds = await resolveAppIds(page.map((g) => g.title));
 
-          return json(
-            page.map((game, index) => {
-              const appId = appIds[index];
-              if (!appId) {
-                return {
-                  objectId: game.normalized.replace(/\s+/g, "-"),
-                  shop: "steam",
-                  title: game.title,
-                  iconUrl: null,
-                  libraryHeroImageUrl: null,
-                  libraryImageUrl: null,
-                  logoImageUrl: null,
-                  logoPosition: null,
-                  coverImageUrl: null,
-                  downloadSources: [game.sourceName],
-                };
-              }
-              return buildSteamAssets(appId, game.title, [game.sourceName]);
-            })
+          const assets = await Promise.all(
+            page.map((game, index) =>
+              resolveAssets(
+                url.origin,
+                appIds[index] ?? null,
+                game.title,
+                [game.sourceName],
+                game.normalized.replace(/\s+/g, "-")
+              )
+            )
           );
+
+          return json(assets);
         } catch {
           return json([]);
         }
