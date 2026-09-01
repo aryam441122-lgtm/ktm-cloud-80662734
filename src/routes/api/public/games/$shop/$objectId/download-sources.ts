@@ -14,7 +14,14 @@ export const Route = createFileRoute(
         const skip = Number(url.searchParams.get("skip") ?? 0) || 0;
         const titleParam = url.searchParams.get("title");
 
-        const title = titleParam || (await getSteamTitle(params.objectId));
+        // Numeric ids resolve through Steam; slug ids come from source-only
+        // games and already carry the title.
+        const slugTitle = /^\d+$/.test(params.objectId)
+          ? null
+          : params.objectId.replace(/-/g, " ");
+
+        const title =
+          titleParam || slugTitle || (await getSteamTitle(params.objectId));
         if (!title) return json([]);
 
         try {
