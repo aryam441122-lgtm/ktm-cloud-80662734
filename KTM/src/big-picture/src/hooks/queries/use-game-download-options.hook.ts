@@ -113,7 +113,7 @@ function setNoDownloadOptionsState(
 }
 
 async function fetchDownloadOptions(
-  game: Pick<Game, "objectId" | "shop">,
+  game: Pick<Game, "objectId" | "shop"> & { title?: string },
   signal: { cancelled: boolean },
   setters: DownloadStateSetters,
   knownGameSourcesEmptyStateReason: DownloadOptionsEmptyStateReason | null
@@ -157,6 +157,9 @@ async function fetchDownloadOptions(
         params: {
           take: 100,
           skip: 0,
+          // Sending the title lets the API match repacks even when the game
+          // has no numeric Steam id (source-only entries).
+          ...(game.title ? { title: game.title } : {}),
           downloadSourceIds: sortedSources.map((source) => source.id),
         },
         needsAuth: false,
@@ -185,6 +188,7 @@ async function fetchDownloadOptions(
 
 export function useGameDownloadOptions(
   game: Pick<Game, "objectId" | "shop"> & {
+    title?: string;
     downloadSources?: string[];
   },
   visible: boolean
@@ -253,6 +257,7 @@ export function useGameDownloadOptions(
     downloadSourcesDependencyKey,
     game.objectId,
     game.shop,
+    game.title,
     knownGameSourcesEmptyStateReason,
     shouldLoadDownloadOptions,
   ]);

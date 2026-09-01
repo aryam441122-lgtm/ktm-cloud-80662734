@@ -423,6 +423,8 @@ export function GameDetailsContextProvider({
         const params = {
           take: 100,
           skip: 0,
+          // Title makes repack matching work even without a Steam id.
+          ...(gameTitle ? { title: gameTitle } : {}),
           downloadSourceIds: sources.map((source) => source.id),
         };
 
@@ -462,7 +464,7 @@ export function GameDetailsContextProvider({
     return () => {
       cancelled = true;
     };
-  }, [shop, objectId]);
+  }, [shop, objectId, gameTitle]);
 
   const getDownloadsPath = async () => {
     if (userPreferences?.downloadsPath) return userPreferences.downloadsPath;
