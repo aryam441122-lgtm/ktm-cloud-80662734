@@ -71,6 +71,11 @@ function hasBigPictureExactTable(
  * the main app translations instead of falling back to English.
  */
 const mainLocaleKeysBySourceText = new Map<string, string>();
+const mainLocaleKeysByNormalizedText = new Map<string, string>();
+
+function normalizeSourceText(value: string) {
+  return value.trim().toLowerCase().replace(/[:.\s]+$/, "");
+}
 
 function indexMainLocaleStrings(
   value: unknown,
@@ -79,9 +84,17 @@ function indexMainLocaleStrings(
 ) {
   if (typeof value === "string") {
     const key = `${namespace}:${path}`;
-    const normalized = value.trim();
-    if (normalized && !mainLocaleKeysBySourceText.has(normalized)) {
-      mainLocaleKeysBySourceText.set(normalized, key);
+    const trimmed = value.trim();
+
+    if (trimmed && !trimmed.includes("{{")) {
+      if (!mainLocaleKeysBySourceText.has(trimmed)) {
+        mainLocaleKeysBySourceText.set(trimmed, key);
+      }
+
+      const normalized = normalizeSourceText(trimmed);
+      if (normalized && !mainLocaleKeysByNormalizedText.has(normalized)) {
+        mainLocaleKeysByNormalizedText.set(normalized, key);
+      }
     }
     return;
   }
@@ -110,15 +123,24 @@ if (englishResources) {
 }
 
 function translateWithMainLocales(sourceText: string) {
-  const key = mainLocaleKeysBySourceText.get(sourceText);
+  const trimmed = sourceText.trim();
+  if (!trimmed) return null;
+
+  const key =
+    mainLocaleKeysBySourceText.get(trimmed) ??
+    mainLocaleKeysByNormalizedText.get(normalizeSourceText(trimmed));
   if (!key) return null;
 
   const translated = i18next.t(key, { defaultValue: "" });
   if (typeof translated !== "string" || !translated) return null;
-  if (translated === key) return null;
+  if (translated === key || translated === trimmed) return null;
 
-  return translated;
+  // Preserve a trailing colon the Big Picture markup relies on.
+  return sourceText.trim().endsWith(":") && !translated.endsWith(":")
+    ? `${translated}:`
+    : translated;
 }
+
 
 function rememberReverseTranslation(sourceText: string, translated: string) {
   if (translated === sourceText) return;
