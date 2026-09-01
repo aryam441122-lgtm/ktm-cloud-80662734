@@ -51,6 +51,104 @@ export function resolveBigPictureLanguage(
   return "en";
 }
 
+/**
+ * True when Big Picture ships a dedicated exact-match table for the active
+ * language. Anything else (Arabic, German, ...) must go through the main app
+ * translations instead of silently rendering English.
+ */
+function hasBigPictureExactTable(
+  language = i18next.resolvedLanguage ?? i18next.language ?? "en"
+) {
+  if (language.startsWith("en")) return true;
+  return resolveBigPictureLanguage(language) !== "en";
+}
+
+
+/**
+ * Index of every English string shipped in the main app locales, mapped to its
+ * i18next key ("namespace:path"). Big Picture only ships exact-match tables for
+ * a handful of languages, so for anything else (Arabic, German, ...) we reuse
+ * the main app translations instead of falling back to English.
+ */
+const mainLocaleKeysBySourceText = new Map<string, string>();
+const mainLocaleKeysByNormalizedText = new Map<string, string>();
+
+function normalizeSourceText(value: string) {
+  return value.trim().toLowerCase().replace(/[:.\s]+$/, "");
+}
+
+function indexMainLocaleStrings(
+  value: unknown,
+  namespace: string,
+  path: string
+) {
+  if (typeof value === "string") {
+    const key = `${namespace}:${path}`;
+    const trimmed = value.trim();
+
+    if (trimmed && !trimmed.includes("{{")) {
+      if (!mainLocaleKeysBySourceText.has(trimmed)) {
+        mainLocaleKeysBySourceText.set(trimmed, key);
+      }
+
+      const normalized = normalizeSourceText(trimmed);
+      if (normalized && !mainLocaleKeysByNormalizedText.has(normalized)) {
+        mainLocaleKeysByNormalizedText.set(normalized, key);
+      }
+    }
+    return;
+  }
+
+  if (!value || typeof value !== "object") return;
+
+  for (const [childKey, childValue] of Object.entries(
+    value as Record<string, unknown>
+  )) {
+    indexMainLocaleStrings(
+      childValue,
+      namespace,
+      path ? `${path}.${childKey}` : childKey
+    );
+  }
+}
+
+const englishResources = (localeResources as Record<string, unknown>)["en"] as
+  | Record<string, unknown>
+  | undefined;
+
+if (englishResources) {
+  for (const [namespace, bundle] of Object.entries(englishResources)) {
+    indexMainLocaleStrings(bundle, namespace, "");
+  }
+}
+
+function translateWithMainLocales(sourceText: string) {
+  const trimmed = sourceText.trim();
+  if (!trimmed) return null;
+
+  const key =
+    mainLocaleKeysBySourceText.get(trimmed) ??
+    mainLocaleKeysByNormalizedText.get(normalizeSourceText(trimmed));
+  if (!key) return null;
+
+  const translated = i18next.t(key, { defaultValue: "" });
+  if (typeof translated !== "string" || !translated) return null;
+  if (translated === key || translated === trimmed) return null;
+
+  // Preserve a trailing colon the Big Picture markup relies on.
+  return sourceText.trim().endsWith(":") && !translated.endsWith(":")
+    ? `${translated}:`
+    : translated;
+}
+
+
+function rememberReverseTranslation(sourceText: string, translated: string) {
+  if (translated === sourceText) return;
+  if (!reverseTranslations.has(translated)) {
+    reverseTranslations.set(translated, sourceText);
+  }
+}
+
 function getSourceText(value: string) {
   return reverseTranslations.get(value) ?? value;
 }
@@ -59,8 +157,24 @@ function translateExactText(value: string) {
   const language = resolveBigPictureLanguage();
   const sourceText = getSourceText(value);
 
-  return exactTranslations[language][sourceText] ?? sourceText;
+  const exact = hasBigPictureExactTable()
+    ? exactTranslations[language][sourceText]
+    : undefined;
+  if (exact) {
+    rememberReverseTranslation(sourceText, exact);
+    return exact;
+  }
+
+
+  const fromMainLocales = translateWithMainLocales(sourceText);
+  if (fromMainLocales) {
+    rememberReverseTranslation(sourceText, fromMainLocales);
+    return fromMainLocales;
+  }
+
+  return sourceText;
 }
+
 
 function translateTextNode(node: Text) {
   const value = node.nodeValue ?? "";

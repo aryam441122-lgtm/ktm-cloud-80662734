@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { FocusItem, GridFocusGroup, Typography } from "../../components";
 import {
   CATALOGUE_EMPTY_STATE_ID,
@@ -37,7 +37,19 @@ export function CatalogueGrid({
   loadMore,
 }: Readonly<GridProps>) {
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
-  const gridItems = search.data?.edges ?? [];
+  const rawGridItems = search.data?.edges;
+  // The catalogue can return the same game twice (a title matched by more than
+  // one download source). Rendering both would register duplicate focus nodes
+  // and crash Big Picture navigation, so keep only the first occurrence.
+  const gridItems = useMemo(() => {
+    const seenIds = new Set<string>();
+
+    return (rawGridItems ?? []).filter((item) => {
+      if (!item?.id || seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
+  }, [rawGridItems]);
   const hasGridItems = gridItems.length > 0;
   const itemIds =
     search.isLoading && !hasGridItems
