@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { buildSteamAssets, json, options204 } from "@/lib/steam-catalogue";
+import { json, options204 } from "@/lib/steam-catalogue";
 import {
   getSourceGames,
   readSourceIds,
   resolveAppIds,
 } from "@/lib/source-catalogue";
+import { resolveAssets } from "@/lib/steam-images";
 import { normalizeTitle } from "@/lib/repack-index";
 
 export const Route = createFileRoute("/api/public/catalogue/search")({
@@ -37,26 +38,35 @@ export const Route = createFileRoute("/api/public/catalogue/search")({
           const page = games.slice(skip, skip + take);
           const appIds = await resolveAppIds(page.map((g) => g.title));
 
-          return json({
-            count: games.length,
-            edges: page.map((game, index) => {
-              const appId = appIds[index];
-              const objectId = appId ?? game.normalized.replace(/\s+/g, "-");
-              const assets = appId ? buildSteamAssets(appId, game.title) : null;
+          const edges = await Promise.all(
+            page.map(async (game, index) => {
+              const appId = appIds[index] ?? null;
+              const fallbackId = game.normalized.replace(/\s+/g, "-");
+              const assets = await resolveAssets(
+                origin,
+                appId,
+                game.title,
+                [game.sourceName],
+                fallbackId
+              );
 
               return {
-                id: `steam:${objectId}`,
-                objectId,
+                id: `steam:${assets.objectId}`,
+                objectId: assets.objectId,
                 title: game.title,
                 shop: "steam",
                 genres: [],
                 releaseYear: null,
-                libraryImageUrl: assets?.libraryImageUrl ?? null,
-                coverImageUrl: assets?.coverImageUrl ?? null,
+                libraryImageUrl: assets.libraryImageUrl,
+                coverImageUrl: assets.coverImageUrl,
+                iconUrl: assets.iconUrl,
+                libraryHeroImageUrl: assets.libraryHeroImageUrl,
                 downloadSources: [game.sourceName],
               };
-            }),
-          });
+            })
+          );
+
+          return json({ count: games.length, edges });
         } catch {
           return json({ count: 0, edges: [] });
         }
