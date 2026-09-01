@@ -51,6 +51,69 @@ export function resolveBigPictureLanguage(
   return "en";
 }
 
+/**
+ * Index of every English string shipped in the main app locales, mapped to its
+ * i18next key ("namespace:path"). Big Picture only ships exact-match tables for
+ * a handful of languages, so for anything else (Arabic, German, ...) we reuse
+ * the main app translations instead of falling back to English.
+ */
+const mainLocaleKeysBySourceText = new Map<string, string>();
+
+function indexMainLocaleStrings(
+  value: unknown,
+  namespace: string,
+  path: string
+) {
+  if (typeof value === "string") {
+    const key = `${namespace}:${path}`;
+    const normalized = value.trim();
+    if (normalized && !mainLocaleKeysBySourceText.has(normalized)) {
+      mainLocaleKeysBySourceText.set(normalized, key);
+    }
+    return;
+  }
+
+  if (!value || typeof value !== "object") return;
+
+  for (const [childKey, childValue] of Object.entries(
+    value as Record<string, unknown>
+  )) {
+    indexMainLocaleStrings(
+      childValue,
+      namespace,
+      path ? `${path}.${childKey}` : childKey
+    );
+  }
+}
+
+const englishResources = (localeResources as Record<string, unknown>)["en"] as
+  | Record<string, unknown>
+  | undefined;
+
+if (englishResources) {
+  for (const [namespace, bundle] of Object.entries(englishResources)) {
+    indexMainLocaleStrings(bundle, namespace, "");
+  }
+}
+
+function translateWithMainLocales(sourceText: string) {
+  const key = mainLocaleKeysBySourceText.get(sourceText);
+  if (!key) return null;
+
+  const translated = i18next.t(key, { defaultValue: "" });
+  if (typeof translated !== "string" || !translated) return null;
+  if (translated === key) return null;
+
+  return translated;
+}
+
+function rememberReverseTranslation(sourceText: string, translated: string) {
+  if (translated === sourceText) return;
+  if (!reverseTranslations.has(translated)) {
+    reverseTranslations.set(translated, sourceText);
+  }
+}
+
 function getSourceText(value: string) {
   return reverseTranslations.get(value) ?? value;
 }
@@ -59,8 +122,21 @@ function translateExactText(value: string) {
   const language = resolveBigPictureLanguage();
   const sourceText = getSourceText(value);
 
-  return exactTranslations[language][sourceText] ?? sourceText;
+  const exact = exactTranslations[language][sourceText];
+  if (exact) {
+    rememberReverseTranslation(sourceText, exact);
+    return exact;
+  }
+
+  const fromMainLocales = translateWithMainLocales(sourceText);
+  if (fromMainLocales) {
+    rememberReverseTranslation(sourceText, fromMainLocales);
+    return fromMainLocales;
+  }
+
+  return sourceText;
 }
+
 
 function translateTextNode(node: Text) {
   const value = node.nodeValue ?? "";
