@@ -27,6 +27,7 @@ import {
 } from "@renderer/pages/settings/emulation/emulator-icons";
 import "./library-game-card.scss";
 import { logger } from "@renderer/logger";
+import { buildGameImageFallbacks } from "@renderer/helpers/game-image-fallbacks";
 
 interface LibraryGameCardProps {
   game: LibraryGame;
@@ -66,6 +67,11 @@ export const LibraryGameCard = memo(function LibraryGameCard({
     { url: game.coverImageUrl, isChosenCover: hasPickedCover }, // Level 1
     { url: game.libraryImageUrl, isChosenCover: false }, // Level 2
     { url: game.iconUrl, isChosenCover: false }, // Level 3
+    // Remote Steam artwork + generated placeholder so the card is never blank
+    ...buildGameImageFallbacks(game, "cover").map((url) => ({
+      url,
+      isChosenCover: false,
+    })),
   ].filter(({ url }) => url && url.trim() !== "");
 
   const sources = candidates.map(({ url }) => url);

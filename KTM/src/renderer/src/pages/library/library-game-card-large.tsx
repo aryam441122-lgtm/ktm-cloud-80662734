@@ -29,6 +29,7 @@ import {
   RETROARCH_EMULATOR_ICON,
 } from "@renderer/pages/settings/emulation/emulator-icons";
 import "./library-game-card-large.scss";
+import { buildGameImageFallbacks } from "@renderer/helpers/game-image-fallbacks";
 
 interface LibraryGameCardLargeProps {
   game: LibraryGame;
@@ -163,7 +164,11 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
 
     candidates.push(
       { url: game.libraryImageUrl, isChosen: false },
-      { url: game.iconUrl, isChosen: false }
+      { url: game.iconUrl, isChosen: false },
+      ...buildGameImageFallbacks(game, "hero").map((url) => ({
+        url,
+        isChosen: false,
+      }))
     );
 
     return candidates.filter(

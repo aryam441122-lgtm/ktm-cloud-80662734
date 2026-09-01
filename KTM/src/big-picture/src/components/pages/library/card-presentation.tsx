@@ -107,7 +107,10 @@ function getPresentationImageSources(
             game.iconUrl,
           ];
 
-    return getResolvedImageSources(horizontalSources);
+    return getResolvedImageSources([
+      ...horizontalSources,
+      ...buildGameImageFallbacks(game, "hero"),
+    ]);
   }
 
   return getResolvedImageSources([
@@ -115,6 +118,7 @@ function getPresentationImageSources(
     game.coverImageUrl,
     game.libraryImageUrl,
     game.iconUrl,
+    ...buildGameImageFallbacks(game, "cover"),
   ]);
 }
 
