@@ -37,7 +37,7 @@ import {
   useNavigationActions,
   useNavigationScreenActions,
 } from "../../hooks";
-import { getPreferredGameAssets } from "../../helpers";
+import { buildGameImageFallbacks, getPreferredGameAssets } from "../../helpers";
 import type {
   LibraryGame,
   LocalNotification,
@@ -213,7 +213,10 @@ function getGameImageUrlFromLibrary(
       libraryGame.objectId === gameRoute.objectId
   );
 
-  return getPreferredGameAssets(game, null).iconUrl;
+  return (
+    getPreferredGameAssets(game, null).iconUrl ??
+    (game ? (buildGameImageFallbacks(game, "icon")[0] ?? null) : null)
+  );
 }
 
 function getApiNotificationIsServerRead(

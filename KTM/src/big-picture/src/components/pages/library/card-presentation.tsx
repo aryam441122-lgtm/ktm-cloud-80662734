@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  buildGameImageFallbacks,
   getGameAchievementProgress,
   resolveImageSource,
 } from "../../../helpers";
