@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SourcesIndexRouteImport } from './routes/sources.index'
 import { Route as SourcesSplatRouteImport } from './routes/sources.$'
 import { Route as ApiPublicDownloadSourcesRouteImport } from './routes/api/public/download-sources'
+import { Route as ApiPublicPlaceholderRouteImport } from './routes/api/public/placeholder'
 import { Route as ApiPublicCatalogueCategoryRouteImport } from './routes/api/public/catalogue/$category'
 import { Route as ApiPublicCatalogueFiltersRouteImport } from './routes/api/public/catalogue/filters'
 import { Route as ApiPublicCatalogueSearchRouteImport } from './routes/api/public/catalogue/search'
@@ -47,6 +48,11 @@ const ApiPublicDownloadSourcesRoute =
     path: '/api/public/download-sources',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPlaceholderRoute = ApiPublicPlaceholderRouteImport.update({
+  id: '/api/public/placeholder',
+  path: '/api/public/placeholder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCatalogueCategoryRoute =
   ApiPublicCatalogueCategoryRouteImport.update({
     id: '/api/public/catalogue/$category',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/sources/$': typeof SourcesSplatRoute
   '/sources/': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/placeholder': typeof ApiPublicPlaceholderRoute
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
   '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRouteWithChildren
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/sources/$': typeof SourcesSplatRoute
   '/sources': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/placeholder': typeof ApiPublicPlaceholderRoute
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
   '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRouteWithChildren
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/sources/$': typeof SourcesSplatRoute
   '/sources/': typeof SourcesIndexRoute
   '/api/public/download-sources': typeof ApiPublicDownloadSourcesRouteWithChildren
+  '/api/public/placeholder': typeof ApiPublicPlaceholderRoute
   '/api/public/catalogue/$category': typeof ApiPublicCatalogueCategoryRoute
   '/api/public/catalogue/filters': typeof ApiPublicCatalogueFiltersRoute
   '/api/public/catalogue/search': typeof ApiPublicCatalogueSearchRouteWithChildren
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/sources/$'
     | '/sources/'
     | '/api/public/download-sources'
+    | '/api/public/placeholder'
     | '/api/public/catalogue/$category'
     | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/sources/$'
     | '/sources'
     | '/api/public/download-sources'
+    | '/api/public/placeholder'
     | '/api/public/catalogue/$category'
     | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/sources/$'
     | '/sources/'
     | '/api/public/download-sources'
+    | '/api/public/placeholder'
     | '/api/public/catalogue/$category'
     | '/api/public/catalogue/filters'
     | '/api/public/catalogue/search'
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   SourcesSplatRoute: typeof SourcesSplatRoute
   SourcesIndexRoute: typeof SourcesIndexRoute
   ApiPublicDownloadSourcesRoute: typeof ApiPublicDownloadSourcesRouteWithChildren
+  ApiPublicPlaceholderRoute: typeof ApiPublicPlaceholderRoute
   ApiPublicCatalogueCategoryRoute: typeof ApiPublicCatalogueCategoryRoute
   ApiPublicCatalogueFiltersRoute: typeof ApiPublicCatalogueFiltersRoute
   ApiPublicCatalogueSearchRoute: typeof ApiPublicCatalogueSearchRouteWithChildren
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/download-sources'
       fullPath: '/api/public/download-sources'
       preLoaderRoute: typeof ApiPublicDownloadSourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/placeholder': {
+      id: '/api/public/placeholder'
+      path: '/api/public/placeholder'
+      fullPath: '/api/public/placeholder'
+      preLoaderRoute: typeof ApiPublicPlaceholderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/catalogue/$category': {
@@ -417,6 +437,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesSplatRoute: SourcesSplatRoute,
   SourcesIndexRoute: SourcesIndexRoute,
   ApiPublicDownloadSourcesRoute: ApiPublicDownloadSourcesRouteWithChildren,
+  ApiPublicPlaceholderRoute: ApiPublicPlaceholderRoute,
   ApiPublicCatalogueCategoryRoute: ApiPublicCatalogueCategoryRoute,
   ApiPublicCatalogueFiltersRoute: ApiPublicCatalogueFiltersRoute,
   ApiPublicCatalogueSearchRoute: ApiPublicCatalogueSearchRouteWithChildren,
