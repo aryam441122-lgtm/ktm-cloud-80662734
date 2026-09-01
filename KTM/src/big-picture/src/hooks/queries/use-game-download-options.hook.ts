@@ -10,12 +10,11 @@ export type DownloadOptionsEmptyStateReason =
   | "no-download-options";
 
 function getKnownGameSourcesEmptyStateReason(
-  downloadSources: string[] | undefined
+  _downloadSources: string[] | undefined
 ): DownloadOptionsEmptyStateReason | null {
-  if (Array.isArray(downloadSources) && downloadSources.length === 0) {
-    return "no-game-sources";
-  }
-
+  // The catalogue frequently reports an empty `downloadSources` array for games
+  // it has not indexed yet. Trusting it made the modal claim "no sources" even
+  // when the user has sources configured, so always query the API instead.
   return null;
 }
 
