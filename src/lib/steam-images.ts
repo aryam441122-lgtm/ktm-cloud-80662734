@@ -135,7 +135,7 @@ export const resolveAssets = async (
     iconUrl: images.capsule ?? `${CDN}/${appId}/capsule_231x87.jpg`,
     libraryHeroImageUrl: hero,
     libraryImageUrl: library,
-    logoImageUrl: `${CDN}/${appId}/logo.png`,
+    logoImageUrl: usesClassicCdn ? `${CDN}/${appId}/logo.png` : null,
     logoPosition: null,
     coverImageUrl: header,
     downloadSources,
