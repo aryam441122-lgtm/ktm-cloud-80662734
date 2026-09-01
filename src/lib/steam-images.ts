@@ -118,11 +118,12 @@ export const resolveAssets = async (
 
   // Classic CDN assets exist for the vast majority of older apps; when the
   // app only publishes hashed store assets we reuse the header/capsule.
+  const usesClassicCdn = !images.header || /\/steam\/apps\//.test(images.header);
   const header = images.header ?? `${CDN}/${appId}/header.jpg`;
-  const hero = images.background ?? images.header ?? `${CDN}/${appId}/library_hero.jpg`;
-  const library = images.header
-    ? images.header
-    : `${CDN}/${appId}/library_600x900.jpg`;
+  const hero = usesClassicCdn
+    ? `${CDN}/${appId}/library_hero.jpg`
+    : (images.background ?? header);
+  const library = usesClassicCdn ? `${CDN}/${appId}/library_600x900.jpg` : header;
 
   return {
     objectId: appId,
