@@ -5,6 +5,7 @@ import es from "./es/translation.json";
 import fr from "./fr/translation.json";
 import el from "./el/translation.json";
 import vi from "./vi/translation.json";
+import ar from "./ar/translation.json";
 
 export type BigPictureLanguage =
   | "en"
@@ -13,7 +14,8 @@ export type BigPictureLanguage =
   | "es"
   | "fr"
   | "el"
-  | "vi";
+  | "vi"
+  | "ar";
 
 export const exactTranslations: Record<
   BigPictureLanguage,
@@ -26,6 +28,7 @@ export const exactTranslations: Record<
   fr: fr.exact,
   el: el.exact,
   vi: vi.exact,
+  ar: ar.exact,
 };
 
 export const formatResources: Record<
@@ -39,4 +42,5 @@ export const formatResources: Record<
   fr: fr.format,
   el: el.format,
   vi: vi.format,
+  ar: ar.format,
 };
