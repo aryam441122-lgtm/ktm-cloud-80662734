@@ -456,11 +456,16 @@ export class NavigationService {
 
     if (existingNode) {
       // A duplicate id (e.g. the same game returned twice by the catalogue)
-      // must never take the whole screen down: keep the latest registration
-      // and warn instead of throwing.
+      // must never take the whole screen down: drop the stale registration and
+      // warn instead of throwing.
       console.warn(`Focus node "${node.id}" is already registered.`);
-      this.unregisterNavigationNode(node.id);
+      this.nodes.delete(node.id);
+      this.removeChildTarget(existingNode.regionId, {
+        type: "node",
+        id: node.id,
+      });
     }
+
 
 
     const region = this.regions.get(node.regionId);
