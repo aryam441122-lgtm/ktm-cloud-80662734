@@ -455,8 +455,13 @@ export class NavigationService {
     const existingNode = this.nodes.get(node.id);
 
     if (existingNode) {
-      throw new Error(`Focus node "${node.id}" is already registered.`);
+      // A duplicate id (e.g. the same game returned twice by the catalogue)
+      // must never take the whole screen down: keep the latest registration
+      // and warn instead of throwing.
+      console.warn(`Focus node "${node.id}" is already registered.`);
+      this.unregisterNavigationNode(node.id);
     }
+
 
     const region = this.regions.get(node.regionId);
     const layerId = node.layerId ?? region?.layerId ?? ROOT_NAVIGATION_LAYER_ID;
