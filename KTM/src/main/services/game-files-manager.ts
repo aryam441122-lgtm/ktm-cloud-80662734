@@ -834,7 +834,15 @@ export class GameFilesManager {
       path.parse(download.folderName!).name
     );
 
+    try {
+      await this.assertEnoughDiskSpace(download.downloadPath, [filePath]);
+    } catch (error) {
+      await this.setExtractionFailedState(error, filePath);
+      return false;
+    }
+
     this.updateExtractionProgress(0, true);
+
 
     try {
       const result = await SevenZip.extractFile(
