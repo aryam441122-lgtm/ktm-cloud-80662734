@@ -216,7 +216,18 @@ export class GameFilesManager {
     }
 
 
+    try {
+      await this.assertEnoughDiskSpace(
+        directoryPath,
+        compressedFiles.map((file) => path.join(directoryPath, file))
+      );
+    } catch (error) {
+      await this.setExtractionFailedState(error, directoryPath);
+      return false;
+    }
+
     this.updateExtractionProgress(0, true);
+
 
     const totalFiles = filesToExtract.length;
     let completedFiles = 0;
