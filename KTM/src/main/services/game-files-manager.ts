@@ -28,6 +28,8 @@ import { ExtractionProgress, SevenZip } from "./7zip";
 import * as emulators from "./emulators";
 import * as retroarch from "./retroarch";
 import { getPathType } from "./extraction-path";
+import { getDiskUsage } from "./disk-usage";
+
 import { GameExecutables } from "./game-executables";
 import { logger } from "./logger";
 import { platformToRetroArchPlatform, platformToSystem } from "@main/helpers";
@@ -115,9 +117,42 @@ export class GameFilesManager {
   }
 
   private readonly handleProgress = (progress: ExtractionProgress) => {
-    console.log(`handleProgress: ${progress.percent}% - ${progress.file}`);
     this.updateExtractionProgress(progress.percent / 100);
   };
+
+  /**
+   * Logs the available space before extracting so failures can be told apart
+   * from real out-of-disk situations. Only blocks when the disk really is full.
+   */
+  private async assertEnoughDiskSpace(
+    destinationPath: string,
+    archivePaths: string[]
+  ) {
+    const usage = await getDiskUsage(destinationPath);
+
+    if (!usage) return;
+
+    let archivesSize = 0;
+
+    for (const archivePath of archivePaths) {
+      try {
+        archivesSize += (await fs.promises.stat(archivePath)).size;
+      } catch {
+        // Ignore parts we cannot stat
+      }
+    }
+
+    logger.info(
+      `[GameFilesManager] Extracting to ${destinationPath} — free: ${usage.free} bytes, archives: ${archivesSize} bytes`
+    );
+
+    if (archivesSize > 0 && usage.free < archivesSize) {
+      throw new Error(
+        `Not enough free disk space to extract: ${usage.free} bytes free, at least ${archivesSize} bytes required`
+      );
+    }
+  }
+
 
   async extractFilesInDirectory(directoryPath: string): Promise<boolean> {
     let pathType: Awaited<ReturnType<typeof getPathType>>;
@@ -150,13 +185,51 @@ export class GameFilesManager {
       FILE_EXTENSIONS_TO_EXTRACT.some((ext) => file.toLowerCase().endsWith(ext))
     );
 
-    const filesToExtract = compressedFiles.filter(
-      (file) => /part1\.rar$/i.test(file) || !/part\d+\.rar$/i.test(file)
-    );
+    // Multi-volume archives must be extracted from their first volume only.
+    // Supported naming schemes: name.partNN.rar, name.rNN and name.NNN
+    const isFirstVolume = (file: string) => {
+      const normalized = file.toLowerCase();
 
-    if (filesToExtract.length === 0) return true;
+      const partMatch = normalized.match(/\.part(\d+)\.rar$/);
+      if (partMatch) return Number(partMatch[1]) === 1;
+
+      if (/\.r\d+$/.test(normalized)) return false;
+
+      const numberedMatch = normalized.match(/\.(\d{3,})$/);
+      if (numberedMatch) return Number(numberedMatch[1]) === 1;
+
+      return true;
+    };
+
+    const filesToExtract = compressedFiles.filter(isFirstVolume);
+
+    if (filesToExtract.length === 0) {
+      if (compressedFiles.length > 0) {
+        await this.setExtractionFailedState(
+          new Error(
+            `Found ${compressedFiles.length} archive part(s) in ${directoryPath} but no first volume to start extraction from`
+          ),
+          directoryPath
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+
+    try {
+      await this.assertEnoughDiskSpace(
+        directoryPath,
+        compressedFiles.map((file) => path.join(directoryPath, file))
+      );
+    } catch (error) {
+      await this.setExtractionFailedState(error, directoryPath);
+      return false;
+    }
 
     this.updateExtractionProgress(0, true);
+
 
     const totalFiles = filesToExtract.length;
     let completedFiles = 0;
@@ -763,7 +836,15 @@ export class GameFilesManager {
       path.parse(download.folderName!).name
     );
 
+    try {
+      await this.assertEnoughDiskSpace(download.downloadPath, [filePath]);
+    } catch (error) {
+      await this.setExtractionFailedState(error, filePath);
+      return false;
+    }
+
     this.updateExtractionProgress(0, true);
+
 
     try {
       const result = await SevenZip.extractFile(
