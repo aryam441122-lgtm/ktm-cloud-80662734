@@ -45,6 +45,29 @@ export class SevenZip {
     );
   }
 
+  private static ensureBinaryIsUsable() {
+    const binary = this.binaryPath;
+
+    if (!fs.existsSync(binary)) {
+      throw new Error(`7zip binary was not found at ${binary}`);
+    }
+
+    if (process.platform !== "win32") {
+      try {
+        fs.accessSync(binary, fs.constants.X_OK);
+      } catch {
+        try {
+          fs.chmodSync(binary, 0o755);
+          logger.info(`[7zip] Fixed missing execute permission on ${binary}`);
+        } catch (chmodError) {
+          throw new Error(
+            `7zip binary at ${binary} is not executable: ${String(chmodError)}`
+          );
+        }
+      }
+    }
+  }
+
   public static async extractFile(
     {
       filePath,
@@ -61,6 +84,12 @@ export class SevenZip {
   ): Promise<ExtractionResult> {
     const destination = outputPath ?? cwd ?? process.cwd();
 
+    this.ensureBinaryIsUsable();
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Archive not found: ${filePath}`);
+    }
+
     await fs.promises.mkdir(destination, { recursive: true });
 
     return new Promise((resolve, reject) => {
@@ -76,6 +105,8 @@ export class SevenZip {
 
         const extractedFiles: string[] = [];
         let fileCount = 0;
+        let stderrOutput = "";
+        let exitCode: number | null = null;
 
         const options: CommandLineSwitches = {
           $bin: this.binaryPath,
@@ -88,10 +119,32 @@ export class SevenZip {
 
         const stream = Seven.extractFull(filePath, ".", options);
 
-        stream._childProcess = spawn(stream._bin, stream._args, {
+        const childProcess = spawn(stream._bin, stream._args, {
           cwd: destination,
-          detached: true,
           windowsHide: true,
+        });
+
+        stream._childProcess = childProcess;
+
+        childProcess.stderr?.on("data", (chunk) => {
+          stderrOutput += chunk.toString();
+          if (stderrOutput.length > 8000) {
+            stderrOutput = stderrOutput.slice(-8000);
+          }
+        });
+
+        childProcess.on("close", (code) => {
+          exitCode = code;
+        });
+
+        childProcess.on("error", (spawnError) => {
+          if (settled || attemptId !== activeAttempt) return;
+          settled = true;
+          reject(
+            new Error(
+              `Failed to launch 7zip (${this.binaryPath}): ${spawnError.message}`
+            )
+          );
         });
 
         stream.on("progress", (progress) => {
@@ -131,10 +184,32 @@ export class SevenZip {
             return;
           }
 
-          logger.error(`Extraction error for ${filePath}:`, err);
+          const details = [
+            err instanceof Error ? err.message : String(err ?? ""),
+            stderrOutput.trim(),
+          ]
+            .filter(Boolean)
+            .join(" | ");
+
+          logger.error(
+            `Extraction error for ${filePath} (exit code ${exitCode}): ${details}`
+          );
+
+          // 7zip exit code 1 means "warning": some files were skipped, but the
+          // extraction itself completed. Do not fail the whole download for it.
+          if (exitCode === 1 && extractedFiles.length > 0) {
+            settled = true;
+            logger.info(
+              `Extraction of ${filePath} finished with warnings, continuing (${extractedFiles.length} files)`
+            );
+            resolve({ success: true, extractedFiles });
+            return;
+          }
 
           const shouldTryNextPassword =
-            index < passwords.length - 1 && this.isPasswordRelatedError(err);
+            index < passwords.length - 1 &&
+            (this.isPasswordRelatedError(err) ||
+              this.isPasswordRelatedError(stderrOutput));
 
           if (shouldTryNextPassword) {
             logger.info(
@@ -146,8 +221,13 @@ export class SevenZip {
             logger.error(
               `Failed to extract file: ${filePath} after trying all passwords`
             );
-            reject(new Error(`Failed to extract file: ${filePath}`));
+            reject(
+              new Error(
+                `Failed to extract file: ${filePath}${details ? ` — ${details}` : ""}`
+              )
+            );
           }
+
         });
 
         Seven.listen(stream);
