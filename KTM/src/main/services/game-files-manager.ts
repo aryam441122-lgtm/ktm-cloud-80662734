@@ -150,11 +150,38 @@ export class GameFilesManager {
       FILE_EXTENSIONS_TO_EXTRACT.some((ext) => file.toLowerCase().endsWith(ext))
     );
 
-    const filesToExtract = compressedFiles.filter(
-      (file) => /part1\.rar$/i.test(file) || !/part\d+\.rar$/i.test(file)
-    );
+    // Multi-volume archives must be extracted from their first volume only.
+    // Supported naming schemes: name.partNN.rar, name.rNN and name.NNN
+    const isFirstVolume = (file: string) => {
+      const normalized = file.toLowerCase();
 
-    if (filesToExtract.length === 0) return true;
+      const partMatch = normalized.match(/\.part(\d+)\.rar$/);
+      if (partMatch) return Number(partMatch[1]) === 1;
+
+      if (/\.r\d+$/.test(normalized)) return false;
+
+      const numberedMatch = normalized.match(/\.(\d{3,})$/);
+      if (numberedMatch) return Number(numberedMatch[1]) === 1;
+
+      return true;
+    };
+
+    const filesToExtract = compressedFiles.filter(isFirstVolume);
+
+    if (filesToExtract.length === 0) {
+      if (compressedFiles.length > 0) {
+        await this.setExtractionFailedState(
+          new Error(
+            `Found ${compressedFiles.length} archive part(s) in ${directoryPath} but no first volume to start extraction from`
+          ),
+          directoryPath
+        );
+        return false;
+      }
+
+      return true;
+    }
+
 
     this.updateExtractionProgress(0, true);
 
