@@ -115,9 +115,42 @@ export class GameFilesManager {
   }
 
   private readonly handleProgress = (progress: ExtractionProgress) => {
-    console.log(`handleProgress: ${progress.percent}% - ${progress.file}`);
     this.updateExtractionProgress(progress.percent / 100);
   };
+
+  /**
+   * Logs the available space before extracting so failures can be told apart
+   * from real out-of-disk situations. Only blocks when the disk really is full.
+   */
+  private async assertEnoughDiskSpace(
+    destinationPath: string,
+    archivePaths: string[]
+  ) {
+    const usage = await getDiskUsage(destinationPath);
+
+    if (!usage) return;
+
+    let archivesSize = 0;
+
+    for (const archivePath of archivePaths) {
+      try {
+        archivesSize += (await fs.promises.stat(archivePath)).size;
+      } catch {
+        // Ignore parts we cannot stat
+      }
+    }
+
+    logger.info(
+      `[GameFilesManager] Extracting to ${destinationPath} — free: ${usage.free} bytes, archives: ${archivesSize} bytes`
+    );
+
+    if (archivesSize > 0 && usage.free < archivesSize) {
+      throw new Error(
+        `Not enough free disk space to extract: ${usage.free} bytes free, at least ${archivesSize} bytes required`
+      );
+    }
+  }
+
 
   async extractFilesInDirectory(directoryPath: string): Promise<boolean> {
     let pathType: Awaited<ReturnType<typeof getPathType>>;
