@@ -12,3 +12,4 @@
 - Keep the source directory's catalogue list aligned with `src/lib/repack-index.ts` and `public/sources/` so newly added source URLs work in both the website and KTM client.
 - Keep `/sources/gog.json` as a compatibility alias for FreeGOG and match both URL fingerprints so existing client selections continue to work.
 - Add hosted sources to the public JSON files, source catalogue index, sources route, and directory together so both the website and KTM client discover them.
+- Host source JSON files larger than 10 MB through lovable-assets and proxy their existing /sources/<name>.json URL in the sources route; preserve stable client URLs without exceeding repository limits.

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import fitgirlAsset from "@/assets/fitgirl.json.asset.json";
+import iggamesAsset from "@/assets/iggames.json.asset.json";
 
 /**
  * Serves download-source JSON files at /sources/<name>.json
@@ -9,9 +10,11 @@ import fitgirlAsset from "@/assets/fitgirl.json.asset.json";
 const externalSources: Record<string, string> = {
   "fitgirl.json": fitgirlAsset.url,
   fitgirl: fitgirlAsset.url,
+  "iggames.json": iggamesAsset.url,
+  iggames: iggamesAsset.url,
 };
 
-const staticSources = ["steamrip.json", "onlinefix.json", "gog.json", "freegog.json", "insaneramzes.json", "dodi.json", "iggames.json", "rexagames.json"];
+const staticSources = ["steamrip.json", "onlinefix.json", "gog.json", "freegog.json", "insaneramzes.json", "dodi.json", "rexagames.json"];
 
 export const Route = createFileRoute("/sources/$")({
   server: {
