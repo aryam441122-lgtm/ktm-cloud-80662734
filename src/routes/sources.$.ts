@@ -11,7 +11,7 @@ const externalSources: Record<string, string> = {
   fitgirl: fitgirlAsset.url,
 };
 
-const staticSources = ["steamrip.json", "onlinefix.json", "gog.json"];
+const staticSources = ["steamrip.json", "onlinefix.json", "gog.json", "freegog.json", "insaneramzes.json", "dodi.json", "iggames.json"];
 
 export const Route = createFileRoute("/sources/$")({
   server: {
