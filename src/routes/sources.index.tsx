@@ -32,8 +32,21 @@ type Source = (typeof sources)[number];
 
 function SourceCard({ source, origin }: { source: Source; origin: string }) {
   const [copied, setCopied] = useState(false);
+  const [count, setCount] = useState<number>(source.count);
   const url = `${origin}/sources/${source.file}`;
-  const pending = source.count === 0;
+  const pending = count === 0;
+
+  useEffect(() => {
+    if (source.count !== 0) return;
+    const controller = new AbortController();
+    fetch(url, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: { downloads?: unknown[] } | null) => {
+        if (Array.isArray(data?.downloads)) setCount(data.downloads.length);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [source.count, url]);
 
   const copy = async () => {
     try {
@@ -61,7 +74,7 @@ function SourceCard({ source, origin }: { source: Source; origin: string }) {
       </div>
 
       <div className="mt-5 flex min-h-16 items-center gap-3 rounded-md border border-primary/10 bg-primary/5 px-4">
-        <strong className="text-2xl font-bold tabular-nums text-primary">{source.count.toLocaleString("en-US")}</strong>
+        <strong className="text-2xl font-bold tabular-nums text-primary">{count.toLocaleString("en-US")}</strong>
         <span className="text-xs leading-5 text-muted-foreground">لعبة<br />مفهرسة</span>
       </div>
 
