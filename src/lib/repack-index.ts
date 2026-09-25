@@ -26,6 +26,9 @@ export const SOURCES: { key: string; path: string }[] = [
   { key: "onlinefix", path: "/sources/onlinefix.json" },
   { key: "gog", path: "/sources/gog.json" },
   { key: "fitgirl", path: fitgirlAsset.url },
+  { key: "insaneramzes", path: "/sources/insaneramzes.json" },
+  { key: "dodi", path: "/sources/dodi.json" },
+  { key: "iggames", path: "/sources/iggames.json" },
 ];
 
 export const normalizeTitle = (value: string) =>

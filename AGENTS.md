@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the source directory's catalogue list aligned with `src/lib/repack-index.ts` and `public/sources/` so newly added source URLs work in both the website and KTM client.
+- Keep `/sources/gog.json` as a compatibility alias for FreeGOG and match both URL fingerprints so existing client selections continue to work.

@@ -31,6 +31,11 @@ const idsForSource = async (origin: string, key: string, path: string) => {
     ? [path]
     : [`${origin}${path}`, `https://ktm-cloud.lovable.app${path}`];
 
+  // The renamed FreeGOG source and older GOG URL share the same catalogue.
+  if (key === "gog") {
+    urls.push(`${origin}/sources/freegog.json`, "https://ktm-cloud.lovable.app/sources/freegog.json");
+  }
+
   const ids = [key, ...(await Promise.all(urls.map(idFromUrl)))];
   sourceIdCache.set(cacheKey, ids);
   return ids;
