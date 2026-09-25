@@ -29,6 +29,7 @@ export const SOURCES: { key: string; path: string }[] = [
   { key: "insaneramzes", path: "/sources/insaneramzes.json" },
   { key: "dodi", path: "/sources/dodi.json" },
   { key: "iggames", path: "/sources/iggames.json" },
+  { key: "rexagames", path: "/sources/rexagames.json" },
 ];
 
 export const normalizeTitle = (value: string) =>
