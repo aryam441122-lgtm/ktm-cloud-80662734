@@ -1,20 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Copy, Download, ExternalLink, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ktmZip from "@/assets/KTM.zip.asset.json";
 
 export const Route = createFileRoute("/sources/")({
   head: () => ({
     meta: [
-      { title: "مصادر تحميل KTM — روابط JSON جاهزة" },
-      {
-        name: "description",
-        content:
-          "روابط مصادر التحميل الجاهزة لمشغل KTM: SteamRip وOnlineFix وFitGirl وGOG، انسخ الرابط وأضفه من الإعدادات.",
-      },
-      { property: "og:title", content: "مصادر تحميل KTM — روابط JSON جاهزة" },
-      {
-        property: "og:description",
-        content: "انسخ رابط أي مصدر وأضفه داخل إعدادات KTM مباشرة.",
-      },
+      { title: "مصادر التحميل | KTM Launcher" },
+      { name: "description", content: "تصفح مصادر تحميل KTM وانسخ روابط SteamRip وFitGirl وFreeGOG وOnlineFix وDODI وIGGAMES وInsaneRamZes." },
+      { property: "og:title", content: "مصادر التحميل | KTM Launcher" },
+      { property: "og:description", content: "دليل مصادر التحميل المتاحة لبرنامج KTM Launcher." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -22,162 +18,115 @@ export const Route = createFileRoute("/sources/")({
   component: SourcesPage,
 });
 
-type Source = {
-  name: string;
-  file: string;
-  tag: string;
-  description: string;
-};
+const sources = [
+  { name: "SteamRip", file: "steamrip.json", count: 4784, platform: "Windows" },
+  { name: "FitGirl", file: "fitgirl.json", count: 8706, platform: "Windows" },
+  { name: "FreeGOG", file: "freegog.json", count: 7688, platform: "Windows" },
+  { name: "OnlineFix", file: "onlinefix.json", count: 2784, platform: "Windows" },
+  { name: "DODI", file: "dodi.json", count: 0, platform: "Windows" },
+  { name: "IGGAMES", file: "iggames.json", count: 0, platform: "Windows" },
+  { name: "InsaneRamZes", file: "insaneramzes.json", count: 3493, platform: "Windows" },
+] as const;
 
-const sources: Source[] = [
-  {
-    name: "SteamRip",
-    file: "steamrip.json",
-    tag: "PC / Pre-installed",
-    description: "ألعاب جاهزة للتشغيل مباشرة بدون تثبيت معقّد.",
-  },
-  {
-    name: "OnlineFix",
-    file: "onlinefix.json",
-    tag: "Multiplayer",
-    description: "إصدارات تدعم اللعب الجماعي عبر الإنترنت.",
-  },
-  {
-    name: "FitGirl",
-    file: "fitgirl.json",
-    tag: "Repacks",
-    description: "أرشيف ضخم من الريباكات المضغوطة بحجم أصغر.",
-  },
-  {
-    name: "GOG",
-    file: "gog.json",
-    tag: "DRM-Free",
-    description: "إصدارات GOG الكلاسيكية والحديثة بدون حماية.",
-  },
-];
-
-const BASE = "https://ktm-cloud.lovable.app";
-
-function useOrigin() {
-  const [origin, setOrigin] = useState(BASE);
-  useEffect(() => {
-    if (typeof window !== "undefined") setOrigin(window.location.origin);
-  }, []);
-  return origin;
-}
+type Source = (typeof sources)[number];
 
 function SourceCard({ source, origin }: { source: Source; origin: string }) {
   const [copied, setCopied] = useState(false);
   const url = `${origin}/sources/${source.file}`;
+  const pending = source.count === 0;
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }
   };
 
   return (
-    <li className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur transition-colors hover:border-primary/50">
-      <div
-        className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-        aria-hidden="true"
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
-          {source.name.slice(0, 2).toUpperCase()}
-        </span>
+    <li className="flex min-w-0 flex-col rounded-md border border-border bg-card p-5 transition-colors hover:border-primary/40">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-card-foreground">
-            {source.name}
-          </h2>
-          <p className="text-xs text-muted-foreground">{source.description}</p>
+          <h2 className="truncate text-base font-bold text-card-foreground" dir="auto">{source.name}</h2>
+          <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className={`size-1.5 shrink-0 rounded-full ${pending ? "bg-muted-foreground" : "bg-chart-2"}`} />
+            {pending ? "بانتظار إضافة الألعاب" : "متاح"}
+            <span aria-hidden="true">·</span>
+            {source.platform}
+          </p>
         </div>
-        <span className="ms-auto rounded-full border border-border/70 px-3 py-1 text-[11px] font-medium text-muted-foreground">
-          {source.tag}
-        </span>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-xs font-bold text-secondary-foreground" aria-label="Windows">⊞</span>
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <code
-          dir="ltr"
-          className="min-w-0 flex-1 truncate rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-left text-xs text-muted-foreground"
-        >
-          {url}
-        </code>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={copy}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            {copied ? "تم النسخ ✓" : "نسخ الرابط"}
-          </button>
-          <a
-            href={`/sources/${source.file}`}
-            className="rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            فتح
-          </a>
-        </div>
+      <div className="mt-5 flex min-h-16 items-center gap-3 rounded-md border border-primary/10 bg-primary/5 px-4">
+        <strong className="text-2xl font-bold tabular-nums text-primary">{source.count.toLocaleString("en-US")}</strong>
+        <span className="text-xs leading-5 text-muted-foreground">لعبة<br />مفهرسة</span>
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <Button type="button" variant="outline" onClick={copy} className="min-w-0 flex-1 border-border bg-transparent text-foreground hover:bg-accent" aria-label={`نسخ رابط ${source.name}`}>
+          {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+          {copied ? "تم النسخ" : "نسخ الرابط"}
+        </Button>
+        <Button variant="outline" size="icon" asChild className="border-border bg-transparent" title={`فتح ${source.name}`}>
+          <a href={`/sources/${source.file}`} target="_blank" rel="noopener noreferrer" aria-label={`فتح ملف ${source.name}`}><ExternalLink aria-hidden="true" /></a>
+        </Button>
       </div>
     </li>
   );
 }
 
 function SourcesPage() {
-  const origin = useOrigin();
+  const [origin, setOrigin] = useState("https://ktm-cloud.lovable.app");
+  const [query, setQuery] = useState("");
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const filtered = useMemo(() => sources.filter((source) => source.name.toLowerCase().includes(query.trim().toLowerCase())), [query]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background">
-      <div
-        className="pointer-events-none absolute -top-40 start-1/2 size-[38rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[140px]"
-        aria-hidden="true"
-      />
-      <div className="relative mx-auto max-w-4xl px-6 py-16" dir="rtl">
-        <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-          <span className="size-1.5 rounded-full bg-primary" />
-          KTM Launcher
-        </span>
+    <main className="min-h-screen bg-background text-foreground" dir="rtl">
+      <header className="border-b border-border">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+          <a href="/sources" className="flex shrink-0 items-center gap-2 text-base font-black text-foreground" aria-label="KTM Launcher">
+            <span className="flex size-8 items-center justify-center rounded-md bg-primary text-sm font-black text-primary-foreground">K</span>
+            KTM <span className="hidden text-xs font-normal text-muted-foreground sm:inline">Launcher</span>
+          </a>
+          <nav aria-label="التنقل الرئيسي" className="flex items-center gap-2">
+            <span className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-foreground" aria-current="page">المصادر</span>
+          </nav>
+          <Button size="sm" variant="outline" asChild className="shrink-0 border-primary/30 text-primary hover:bg-accent">
+            <a href={ktmZip.url} download="KTM.zip"><Download aria-hidden="true" /><span className="hidden sm:inline">تحميل البرنامج</span><span className="sm:hidden">تحميل</span></a>
+          </Button>
+        </div>
+      </header>
 
-        <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          مصادر التحميل
-        </h1>
-        <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-          انسخ أي رابط بالأسفل وأضفه داخل البرنامج من: الإعدادات ← مصادر التنزيل
-          ← إضافة مصدر.
-        </p>
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-6xl px-5 pb-7 pt-9 sm:px-8 sm:pt-12">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground">دليل المصادر / KTM</p>
+              <h1 className="mt-2 text-3xl font-bold text-foreground sm:text-4xl">المصادر المتاحة</h1>
+            </div>
+            <div className="text-sm tabular-nums text-muted-foreground">{filtered.length} / {sources.length} مصادر</div>
+          </div>
+          <div className="relative mt-6 w-full max-w-sm">
+            <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث عن مصدر..." aria-label="ابحث عن مصدر" className="h-10 w-full rounded-md border border-border bg-card pr-10 pl-10 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-ring" />
+            {query && <Button type="button" variant="ghost" size="icon" onClick={() => setQuery("")} className="absolute left-1 top-1/2 size-8 -translate-y-1/2" aria-label="مسح البحث"><X aria-hidden="true" /></Button>}
+          </div>
+        </div>
+      </section>
 
-        <ol className="mt-8 grid gap-3 sm:grid-cols-3">
-          {[
-            "افتح KTM ثم الإعدادات",
-            "اختر مصادر التنزيل",
-            "الصق الرابط واضغط إضافة",
-          ].map((step, i) => (
-            <li
-              key={step}
-              className="rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground"
-            >
-              <span className="me-2 font-bold text-primary">{i + 1}.</span>
-              {step}
-            </li>
-          ))}
-        </ol>
-
-        <ul className="mt-10 grid gap-4">
-          {sources.map((source) => (
-            <SourceCard key={source.file} source={source} origin={origin} />
-          ))}
-        </ul>
-
-        <p className="mt-10 text-xs text-muted-foreground">
-          المصادر تُحدَّث تلقائياً — استخدم زر «مزامنة المصادر» داخل البرنامج
-          للحصول على أحدث الروابط.
-        </p>
-      </div>
+      <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+        {filtered.length > 0 ? (
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((source) => <SourceCard key={source.file} source={source} origin={origin} />)}
+          </ul>
+        ) : (
+          <p className="py-16 text-center text-sm text-muted-foreground">لا توجد مصادر تطابق البحث.</p>
+        )}
+      </section>
     </main>
   );
 }
