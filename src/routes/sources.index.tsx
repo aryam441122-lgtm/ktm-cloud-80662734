@@ -8,7 +8,7 @@ export const Route = createFileRoute("/sources/")({
   head: () => ({
     meta: [
       { title: "مصادر التحميل | KTM Launcher" },
-      { name: "description", content: "تصفح مصادر تحميل KTM وانسخ روابط SteamRip وFitGirl وFreeGOG وOnlineFix وDODI وIGGAMES وInsaneRamZes." },
+      { name: "description", content: "تصفح مصادر تحميل KTM وانسخ روابط SteamRip وFitGirl وFreeGOG وOnlineFix وDODI وIGGames وInsaneRamZes وRexaGames." },
       { property: "og:title", content: "مصادر التحميل | KTM Launcher" },
       { property: "og:description", content: "دليل مصادر التحميل المتاحة لبرنامج KTM Launcher." },
       { property: "og:type", content: "website" },
@@ -24,8 +24,9 @@ const sources = [
   { name: "FreeGOG", file: "freegog.json", count: 7688, platform: "Windows" },
   { name: "OnlineFix", file: "onlinefix.json", count: 2784, platform: "Windows" },
   { name: "DODI", file: "dodi.json", count: 0, platform: "Windows" },
-  { name: "IGGAMES", file: "iggames.json", count: 0, platform: "Windows" },
+  { name: "IGGames", file: "iggames.json", count: 5731, platform: "Windows" },
   { name: "InsaneRamZes", file: "insaneramzes.json", count: 3493, platform: "Windows" },
+  { name: "RexaGames", file: "rexagames.json", count: 3025, platform: "Windows" },
 ] as const;
 
 type Source = (typeof sources)[number];
