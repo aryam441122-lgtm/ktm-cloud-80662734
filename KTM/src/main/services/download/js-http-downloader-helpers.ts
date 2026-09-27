@@ -1,5 +1,6 @@
 export const PROGRESS_RESET_THRESHOLD_BYTES = 16 * 1024 * 1024;
-export const MAX_BUDGET_RESETS = 50;
+// Every substantial forward step earns another retry, even for very large files.
+export const MAX_BUDGET_RESETS = 10000;
 export const MAX_RESTARTS_FROM_ZERO = 3;
 
 export const RETRYABLE_ERROR_CODES = new Set([

@@ -62,6 +62,7 @@ interface JsDownloadOptions {
   savePath: string;
   filename?: string;
   headers?: Record<string, string>;
+  refreshUrl?: () => Promise<{ url: string; headers?: Record<string, string> }>;
 }
 
 interface PreparedJsDownload {
@@ -1165,6 +1166,7 @@ export class DownloadManager {
     if (this.usingJsDownloader && this.jsDownloader) {
       logger.log("[DownloadManager] Pausing JS download");
       this.jsDownloader.pauseDownload();
+      await this.jsDownloader.waitForStop();
     } else if (downloadKey) {
       await PythonRPC.rpc
         .call("action", {
@@ -1392,12 +1394,15 @@ export class DownloadManager {
     const { url, headers } = await this.resolveGofileDownload(id, password);
 
     const filename = this.resolveFilename(resumingFilename, download.uri, url);
-    return this.buildDownloadOptions(
+    return {
+      ...this.buildDownloadOptions(
       url,
       download.downloadPath,
       filename,
       headers
-    );
+      ),
+      refreshUrl: () => this.resolveGofileDownload(id, password),
+    };
   }
 
   private static async resolveGofileDownload(
@@ -2073,7 +2078,9 @@ export class DownloadManager {
           this.isPreparingDownload = false;
 
           this.logResolvedUrl(options.url);
-          this.jsDownloader.startDownload(options).catch((err) => {
+          const downloader = this.jsDownloader;
+          downloader.startDownload(options).catch((err) => {
+            if (this.startGeneration !== myGeneration || this.jsDownloader !== downloader) return;
             void this.handleRuntimeDownloadError(downloadId, err).catch(
               (error) => {
                 logger.error(

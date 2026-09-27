@@ -1,0 +1,4 @@
+- [x] Refresh GoFile links during retries and preserve partial downloads.
+- [x] Make stalled requests and manual resume recover promptly and safely.
+- [x] Restore interrupted downloads automatically when connectivity returns.
+- [x] Validate edited launcher TypeScript syntax and GoFile wiring; desktop runtime verification requires the launcher environment.

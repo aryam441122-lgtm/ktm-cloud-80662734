@@ -37,14 +37,15 @@ export interface JsHttpDownloaderOptions {
   savePath: string;
   filename?: string;
   headers?: Record<string, string>;
+  refreshUrl?: () => Promise<Pick<JsHttpDownloaderOptions, "url" | "headers">>;
 }
 
 const MAX_RETRY_ATTEMPTS = 10;
-const MAX_STATUS_RETRY_ATTEMPTS = 4;
-const MAX_RETRY_AFTER_MS = 20000;
+const MAX_STATUS_RETRY_ATTEMPTS = 8;
+const MAX_RETRY_AFTER_MS = 120000;
 const INITIAL_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 15000;
-const STALL_TIMEOUT_MS = 30000;
+const STALL_TIMEOUT_MS = 15000;
 const STALL_CHECK_INTERVAL_MS = 2000;
 const RECONNECT_RETRY_DELAY_MS = 500;
 export const DEFAULT_DOWNLOAD_USER_AGENT =
@@ -61,6 +62,10 @@ class HttpDownloadStatusError extends Error {
   }
 }
 
+class IncompleteDownloadError extends Error {
+  readonly retryable = true;
+}
+
 export class JsHttpDownloader {
   private abortController: AbortController | null = null;
   private writeStream: fs.WriteStream | null = null;
@@ -75,6 +80,8 @@ export class JsHttpDownloader {
   private lastSpeedUpdate = Date.now();
   private bytesAtLastSpeedUpdate = 0;
   private isDownloading = false;
+  private currentRun: Promise<void> | null = null;
+  private wakeRetryDelay: (() => void) | null = null;
 
   private retryCount = 0;
   private statusRetryCount = 0;
@@ -107,12 +114,7 @@ export class JsHttpDownloader {
   }
 
   async startDownload(options: JsHttpDownloaderOptions): Promise<void> {
-    if (this.isDownloading) {
-      logger.log(
-        "[JsHttpDownloader] Download already in progress, resuming..."
-      );
-      return this.resumeDownload();
-    }
+    if (this.currentRun) return this.currentRun;
 
     this.currentOptions = options;
     this.isPaused = false;
@@ -129,7 +131,16 @@ export class JsHttpDownloader {
     this.resolvedFilename = null;
     this.pendingReadSince = null;
     this.resetThrottleWindow();
-    await this.startDownloadWithRetry();
+    return this.runDownload();
+  }
+
+  private runDownload(): Promise<void> {
+    const run = this.startDownloadWithRetry();
+    this.currentRun = run;
+    void run.finally(() => {
+      if (this.currentRun === run) this.currentRun = null;
+    }).catch(() => undefined);
+    return run;
   }
 
   private async startDownloadWithRetry(): Promise<void> {
@@ -143,7 +154,8 @@ export class JsHttpDownloader {
         this.status = "active";
         this.isDownloading = true;
         this.isStallRetry = false;
-        this.pendingReadSince = null;
+        // Detect a server that never sends response headers as well as stalled body reads.
+        this.pendingReadSince = Date.now();
         this.attemptBytesReceived = 0;
 
         const { url, savePath, filename, headers = {} } = this.currentOptions;
@@ -238,6 +250,30 @@ export class JsHttpDownloader {
       return this.handleTransientStatusError(err as HttpDownloadStatusError);
     }
 
+    // GoFile's direct URL and guest cookie can expire while transferring.
+    // Resolve a fresh URL before resuming the already-written bytes.
+    if (
+      this.currentOptions?.refreshUrl &&
+      ((isRetryable && !transientStatus) ||
+        (err instanceof HttpDownloadStatusError &&
+          [401, 403, 404, 410].includes(err.statusCode)) ||
+        err.message.includes("returned a web page"))
+    ) {
+      try {
+        const refreshed = await Promise.race([
+          this.currentOptions.refreshUrl(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Download link refresh timed out")), 20000)
+          ),
+        ]);
+        if (this.isPaused) return false;
+        this.currentOptions = { ...this.currentOptions, ...refreshed };
+        logger.log("[JsHttpDownloader] Refreshed download URL for resume");
+      } catch (refreshError) {
+        logger.warn("[JsHttpDownloader] Could not refresh download URL yet", refreshError);
+      }
+    }
+
     if (wasReconnect) {
       logger.log(
         `[JsHttpDownloader] Reconnecting after a network change; resuming in ${RECONNECT_RETRY_DELAY_MS}ms`
@@ -246,7 +282,13 @@ export class JsHttpDownloader {
       return !this.isPaused;
     }
 
-    if (isRetryable && this.retryCount < MAX_RETRY_ATTEMPTS) {
+    const refreshableError = Boolean(
+      this.currentOptions?.refreshUrl &&
+        ((err instanceof HttpDownloadStatusError &&
+          [401, 403, 404, 410].includes(err.statusCode)) ||
+          err.message.includes("returned a web page"))
+    );
+    if ((isRetryable || refreshableError) && this.retryCount < MAX_RETRY_ATTEMPTS) {
       this.retryCount++;
       this.isReconnecting = true;
       this.downloadSpeed = 0;
@@ -332,7 +374,17 @@ export class JsHttpDownloader {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.wakeRetryDelay = null;
+        resolve();
+      }, ms);
+      this.wakeRetryDelay = () => {
+        clearTimeout(timer);
+        this.wakeRetryDelay = null;
+        resolve();
+      };
+    });
   }
 
   private resetThrottleWindow(): void {
@@ -481,6 +533,7 @@ export class JsHttpDownloader {
       headers: requestHeaders,
       signal: this.abortController?.signal,
     });
+    this.pendingReadSince = null;
 
     const contentType = response.headers.get("content-type") ?? "unknown";
     const contentLength = response.headers.get("content-length") ?? "unknown";
@@ -490,6 +543,7 @@ export class JsHttpDownloader {
 
     if (response.status === 416 && startByte > 0) {
       const remoteTotalSize = this.parseTotalSizeFrom416(response);
+      void response.body?.cancel().catch(() => undefined);
 
       if (remoteTotalSize !== null && startByte === remoteTotalSize) {
         this.fileSize = remoteTotalSize;
@@ -510,6 +564,7 @@ export class JsHttpDownloader {
     }
 
     if (response.status >= 400) {
+      void response.body?.cancel().catch(() => undefined);
       throw new HttpDownloadStatusError(
         response.status,
         isRetryableHttpStatus(response.status),
@@ -518,6 +573,7 @@ export class JsHttpDownloader {
     }
 
     if (!response.ok && response.status !== 206) {
+      void response.body?.cancel().catch(() => undefined);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -526,6 +582,7 @@ export class JsHttpDownloader {
       contentType.includes("text/html") ||
       contentType.includes("application/xhtml")
     ) {
+      void response.body?.cancel().catch(() => undefined);
       throw new Error(
         `The download link returned a web page instead of a file. It may have expired or be invalid.`
       );
@@ -620,6 +677,12 @@ export class JsHttpDownloader {
       skipBytes
     );
     await pipeline(readableStream, this.writeStream);
+
+    if (this.fileSize > 0 && this.bytesDownloaded < this.fileSize) {
+      throw new IncompleteDownloadError(
+        `Download ended early at ${this.bytesDownloaded} of ${this.fileSize} bytes`
+      );
+    }
 
     this.status = "complete";
     this.retryCount = 0;
@@ -798,10 +861,10 @@ export class JsHttpDownloader {
         })();
       },
       destroy(err, callback) {
-        reader
-          .cancel()
-          .catch(() => undefined)
-          .finally(() => callback(err));
+        // A pending reader.read() may not settle until the remote socket closes.
+        // Do not block pipeline teardown (and the next retry) on cancel().
+        void reader.cancel().catch(() => undefined);
+        callback(err);
       },
     });
   }
@@ -822,23 +885,8 @@ export class JsHttpDownloader {
     }
   }
 
-  private async resumeDownload(): Promise<void> {
-    if (!this.currentOptions) {
-      throw new Error("No download options available for resume");
-    }
-    this.isDownloading = false;
-    this.isPaused = false;
-    this.retryCount = 0;
-    this.statusRetryCount = 0;
-    this.budgetResets = 0;
-    this.attemptBytesReceived = 0;
-    this.restartCount = 0;
-    this.isStallRetry = false;
-    this.isReconnecting = false;
-    this.isReconnectRetry = false;
-    this.resetRecoveryState();
-    this.pendingReadSince = null;
-    await this.startDownloadWithRetry();
+  async waitForStop(): Promise<void> {
+    await this.currentRun?.catch(() => undefined);
   }
 
   setReconnecting(value: boolean): void {
@@ -874,6 +922,7 @@ export class JsHttpDownloader {
   pauseDownload(): void {
     logger.log("[JsHttpDownloader] Pausing download");
     this.isPaused = true;
+    this.wakeRetryDelay?.();
     this.pendingReadSince = null;
     this.stopStallDetection();
     if (this.abortController) {
@@ -886,6 +935,7 @@ export class JsHttpDownloader {
   cancelDownload(deleteFile = true): void {
     logger.log("[JsHttpDownloader] Cancelling download");
     this.isPaused = true;
+    this.wakeRetryDelay?.();
     this.pendingReadSince = null;
     this.stopStallDetection();
 
