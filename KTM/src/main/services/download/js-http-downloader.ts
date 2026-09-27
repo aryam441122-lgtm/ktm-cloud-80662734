@@ -868,6 +868,10 @@ export class JsHttpDownloader {
     await this.startDownloadWithRetry();
   }
 
+  async waitForStop(): Promise<void> {
+    await this.currentRun?.catch(() => undefined);
+  }
+
   setReconnecting(value: boolean): void {
     this.isReconnecting = value;
     if (value) {
