@@ -1397,7 +1397,7 @@ export class DownloadManager {
       download.downloadPath,
       filename,
       headers
-    );
+    ) as JsDownloadOptions & { refreshUrl: () => Promise<{ url: string; headers?: Record<string, string> }> };
   }
 
   private static async resolveGofileDownload(

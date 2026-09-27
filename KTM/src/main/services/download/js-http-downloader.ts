@@ -37,6 +37,7 @@ export interface JsHttpDownloaderOptions {
   savePath: string;
   filename?: string;
   headers?: Record<string, string>;
+  refreshUrl?: () => Promise<Pick<JsHttpDownloaderOptions, "url" | "headers">>;
 }
 
 const MAX_RETRY_ATTEMPTS = 10;
@@ -44,7 +45,7 @@ const MAX_STATUS_RETRY_ATTEMPTS = 4;
 const MAX_RETRY_AFTER_MS = 20000;
 const INITIAL_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 15000;
-const STALL_TIMEOUT_MS = 30000;
+const STALL_TIMEOUT_MS = 15000;
 const STALL_CHECK_INTERVAL_MS = 2000;
 const RECONNECT_RETRY_DELAY_MS = 500;
 export const DEFAULT_DOWNLOAD_USER_AGENT =
@@ -75,6 +76,7 @@ export class JsHttpDownloader {
   private lastSpeedUpdate = Date.now();
   private bytesAtLastSpeedUpdate = 0;
   private isDownloading = false;
+  private currentRun: Promise<void> | null = null;
 
   private retryCount = 0;
   private statusRetryCount = 0;
@@ -107,12 +109,7 @@ export class JsHttpDownloader {
   }
 
   async startDownload(options: JsHttpDownloaderOptions): Promise<void> {
-    if (this.isDownloading) {
-      logger.log(
-        "[JsHttpDownloader] Download already in progress, resuming..."
-      );
-      return this.resumeDownload();
-    }
+    if (this.currentRun) return this.currentRun;
 
     this.currentOptions = options;
     this.isPaused = false;
@@ -129,7 +126,16 @@ export class JsHttpDownloader {
     this.resolvedFilename = null;
     this.pendingReadSince = null;
     this.resetThrottleWindow();
-    await this.startDownloadWithRetry();
+    return this.runDownload();
+  }
+
+  private runDownload(): Promise<void> {
+    const run = this.startDownloadWithRetry();
+    this.currentRun = run;
+    void run.finally(() => {
+      if (this.currentRun === run) this.currentRun = null;
+    }).catch(() => undefined);
+    return run;
   }
 
   private async startDownloadWithRetry(): Promise<void> {
@@ -143,7 +149,8 @@ export class JsHttpDownloader {
         this.status = "active";
         this.isDownloading = true;
         this.isStallRetry = false;
-        this.pendingReadSince = null;
+        // Detect a server that never sends response headers as well as stalled body reads.
+        this.pendingReadSince = Date.now();
         this.attemptBytesReceived = 0;
 
         const { url, savePath, filename, headers = {} } = this.currentOptions;
@@ -238,6 +245,25 @@ export class JsHttpDownloader {
       return this.handleTransientStatusError(err as HttpDownloadStatusError);
     }
 
+    // GoFile's direct URL and guest cookie can expire while transferring.
+    // Resolve a fresh URL before resuming the already-written bytes.
+    if (
+      this.currentOptions?.refreshUrl &&
+      (wasStallRetry ||
+        (err instanceof HttpDownloadStatusError &&
+          [401, 403, 404, 410].includes(err.statusCode)) ||
+        err.message.includes("returned a web page"))
+    ) {
+      try {
+        const refreshed = await this.currentOptions.refreshUrl();
+        if (this.isPaused) return false;
+        this.currentOptions = { ...this.currentOptions, ...refreshed };
+        logger.log("[JsHttpDownloader] Refreshed download URL for resume");
+      } catch (refreshError) {
+        logger.warn("[JsHttpDownloader] Could not refresh download URL yet", refreshError);
+      }
+    }
+
     if (wasReconnect) {
       logger.log(
         `[JsHttpDownloader] Reconnecting after a network change; resuming in ${RECONNECT_RETRY_DELAY_MS}ms`
@@ -246,7 +272,7 @@ export class JsHttpDownloader {
       return !this.isPaused;
     }
 
-    if (isRetryable && this.retryCount < MAX_RETRY_ATTEMPTS) {
+    if ((isRetryable || this.currentOptions?.refreshUrl && err instanceof HttpDownloadStatusError && [401, 403, 404, 410].includes(err.statusCode) || this.currentOptions?.refreshUrl && err.message.includes("returned a web page")) && this.retryCount < MAX_RETRY_ATTEMPTS) {
       this.retryCount++;
       this.isReconnecting = true;
       this.downloadSpeed = 0;
@@ -481,6 +507,7 @@ export class JsHttpDownloader {
       headers: requestHeaders,
       signal: this.abortController?.signal,
     });
+    this.pendingReadSince = null;
 
     const contentType = response.headers.get("content-type") ?? "unknown";
     const contentLength = response.headers.get("content-length") ?? "unknown";
@@ -798,10 +825,10 @@ export class JsHttpDownloader {
         })();
       },
       destroy(err, callback) {
-        reader
-          .cancel()
-          .catch(() => undefined)
-          .finally(() => callback(err));
+        // A pending reader.read() may not settle until the remote socket closes.
+        // Do not block pipeline teardown (and the next retry) on cancel().
+        void reader.cancel().catch(() => undefined);
+        callback(err);
       },
     });
   }

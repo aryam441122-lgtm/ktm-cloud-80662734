@@ -1,0 +1,4 @@
+- [ ] Refresh GoFile links during retries and preserve partial downloads.
+- [ ] Make stalled requests and manual resume recover promptly and safely.
+- [ ] Restore interrupted downloads automatically when connectivity returns.
+- [ ] Verify focused launcher tests and report any desktop-only limitation.
