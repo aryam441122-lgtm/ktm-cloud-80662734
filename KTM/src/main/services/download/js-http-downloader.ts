@@ -41,8 +41,8 @@ export interface JsHttpDownloaderOptions {
 }
 
 const MAX_RETRY_ATTEMPTS = 10;
-const MAX_STATUS_RETRY_ATTEMPTS = 4;
-const MAX_RETRY_AFTER_MS = 20000;
+const MAX_STATUS_RETRY_ATTEMPTS = 8;
+const MAX_RETRY_AFTER_MS = 120000;
 const INITIAL_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 15000;
 const STALL_TIMEOUT_MS = 15000;
@@ -253,7 +253,7 @@ export class JsHttpDownloader {
     // Resolve a fresh URL before resuming the already-written bytes.
     if (
       this.currentOptions?.refreshUrl &&
-      (wasStallRetry ||
+      ((isRetryable && !transientStatus) ||
         (err instanceof HttpDownloadStatusError &&
           [401, 403, 404, 410].includes(err.statusCode)) ||
         err.message.includes("returned a web page"))
