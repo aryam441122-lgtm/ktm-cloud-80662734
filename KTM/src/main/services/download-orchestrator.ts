@@ -440,7 +440,6 @@ export class DownloadOrchestrator {
     objectId: string,
     strategy: ResumeDownloadStrategy = "interruptActive"
   ) {
-    this.interruptedByNetwork = null;
     const download = await this.getDownload(shop, objectId);
 
     if (
