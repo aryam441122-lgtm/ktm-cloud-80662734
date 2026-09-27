@@ -62,6 +62,10 @@ class HttpDownloadStatusError extends Error {
   }
 }
 
+class IncompleteDownloadError extends Error {
+  readonly retryable = true;
+}
+
 export class JsHttpDownloader {
   private abortController: AbortController | null = null;
   private writeStream: fs.WriteStream | null = null;
@@ -272,7 +276,13 @@ export class JsHttpDownloader {
       return !this.isPaused;
     }
 
-    if ((isRetryable || this.currentOptions?.refreshUrl && err instanceof HttpDownloadStatusError && [401, 403, 404, 410].includes(err.statusCode) || this.currentOptions?.refreshUrl && err.message.includes("returned a web page")) && this.retryCount < MAX_RETRY_ATTEMPTS) {
+    const refreshableError = Boolean(
+      this.currentOptions?.refreshUrl &&
+        ((err instanceof HttpDownloadStatusError &&
+          [401, 403, 404, 410].includes(err.statusCode)) ||
+          err.message.includes("returned a web page"))
+    );
+    if ((isRetryable || refreshableError) && this.retryCount < MAX_RETRY_ATTEMPTS) {
       this.retryCount++;
       this.isReconnecting = true;
       this.downloadSpeed = 0;
@@ -648,6 +658,12 @@ export class JsHttpDownloader {
     );
     await pipeline(readableStream, this.writeStream);
 
+    if (this.fileSize > 0 && this.bytesDownloaded < this.fileSize) {
+      throw new IncompleteDownloadError(
+        `Download ended early at ${this.bytesDownloaded} of ${this.fileSize} bytes`
+      );
+    }
+
     this.status = "complete";
     this.retryCount = 0;
     this.statusRetryCount = 0;
@@ -847,25 +863,6 @@ export class JsHttpDownloader {
       this.status = "error";
       throw err;
     }
-  }
-
-  private async resumeDownload(): Promise<void> {
-    if (!this.currentOptions) {
-      throw new Error("No download options available for resume");
-    }
-    this.isDownloading = false;
-    this.isPaused = false;
-    this.retryCount = 0;
-    this.statusRetryCount = 0;
-    this.budgetResets = 0;
-    this.attemptBytesReceived = 0;
-    this.restartCount = 0;
-    this.isStallRetry = false;
-    this.isReconnecting = false;
-    this.isReconnectRetry = false;
-    this.resetRecoveryState();
-    this.pendingReadSince = null;
-    await this.startDownloadWithRetry();
   }
 
   async waitForStop(): Promise<void> {
