@@ -260,7 +260,12 @@ export class JsHttpDownloader {
         err.message.includes("returned a web page"))
     ) {
       try {
-        const refreshed = await this.currentOptions.refreshUrl();
+        const refreshed = await Promise.race([
+          this.currentOptions.refreshUrl(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Download link refresh timed out")), 20000)
+          ),
+        ]);
         if (this.isPaused) return false;
         this.currentOptions = { ...this.currentOptions, ...refreshed };
         logger.log("[JsHttpDownloader] Refreshed download URL for resume");
@@ -538,6 +543,7 @@ export class JsHttpDownloader {
 
     if (response.status === 416 && startByte > 0) {
       const remoteTotalSize = this.parseTotalSizeFrom416(response);
+      void response.body?.cancel().catch(() => undefined);
 
       if (remoteTotalSize !== null && startByte === remoteTotalSize) {
         this.fileSize = remoteTotalSize;
@@ -558,6 +564,7 @@ export class JsHttpDownloader {
     }
 
     if (response.status >= 400) {
+      void response.body?.cancel().catch(() => undefined);
       throw new HttpDownloadStatusError(
         response.status,
         isRetryableHttpStatus(response.status),
@@ -566,6 +573,7 @@ export class JsHttpDownloader {
     }
 
     if (!response.ok && response.status !== 206) {
+      void response.body?.cancel().catch(() => undefined);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -574,6 +582,7 @@ export class JsHttpDownloader {
       contentType.includes("text/html") ||
       contentType.includes("application/xhtml")
     ) {
+      void response.body?.cancel().catch(() => undefined);
       throw new Error(
         `The download link returned a web page instead of a file. It may have expired or be invalid.`
       );
