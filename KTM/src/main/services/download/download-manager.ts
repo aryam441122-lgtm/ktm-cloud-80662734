@@ -1165,8 +1165,14 @@ export class DownloadManager {
   static async pauseDownload(downloadKey = this.downloadingGameId) {
     if (this.usingJsDownloader && this.jsDownloader) {
       logger.log("[DownloadManager] Pausing JS download");
-      this.jsDownloader.pauseDownload();
-      await this.jsDownloader.waitForStop();
+      const downloader = this.jsDownloader;
+      downloader.pauseDownload();
+      await downloader.waitForStop();
+      if (this.jsDownloader === downloader) {
+        this.jsDownloader = null;
+        this.usingJsDownloader = false;
+        this.allDebridBatch = null;
+      }
     } else if (downloadKey) {
       await PythonRPC.rpc
         .call("action", {
