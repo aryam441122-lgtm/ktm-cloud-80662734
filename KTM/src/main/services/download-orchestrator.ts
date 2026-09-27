@@ -71,6 +71,7 @@ const RECONNECT_DEBOUNCE_MS = 2000;
 
 export class DownloadOrchestrator {
   private static isOnline = true;
+  private static interruptedByNetwork: { shop: GameShop; objectId: string } | null = null;
   private static reconnectGraceTimer: NodeJS.Timeout | null = null;
   private static lastReconnectAt = 0;
 
@@ -83,6 +84,7 @@ export class DownloadOrchestrator {
     if (!DownloadManager.isJsDownloadActive) {
       this.isOnline = online;
       this.clearReconnectGrace();
+      if (online) void this.resumeNetworkInterruptedDownload();
       return;
     }
 
@@ -124,6 +126,25 @@ export class DownloadOrchestrator {
     DownloadManager.reconnectActiveDownload();
   }
 
+  private static async resumeNetworkInterruptedDownload() {
+    const interrupted = this.interruptedByNetwork;
+    if (!interrupted || !this.isOnline || DownloadManager.hasActiveDownload()) return;
+
+    const download = await this.getDownload(interrupted.shop, interrupted.objectId);
+    if (!this.isOnline || DownloadManager.hasActiveDownload()) return;
+    if (!download || download.status !== "paused" || download.queued) {
+      this.interruptedByNetwork = null;
+      return;
+    }
+
+    try {
+      await this.resumeDownload(interrupted.shop, interrupted.objectId);
+      this.interruptedByNetwork = null;
+    } catch (error) {
+      logger.warn("[DownloadOrchestrator] Network recovery could not resume download", error);
+    }
+  }
+
   private static clearReconnectGrace() {
     if (this.reconnectGraceTimer) {
       clearTimeout(this.reconnectGraceTimer);
@@ -141,10 +162,12 @@ export class DownloadOrchestrator {
     logger.log(
       "[DownloadOrchestrator] No connection after the grace window; pausing the download"
     );
+    this.interruptedByNetwork = { shop: download.shop, objectId: download.objectId };
     await this.pauseDownload(download, {
       reason: "paused",
       startNextQueued: false,
     });
+    if (this.isOnline) void this.resumeNetworkInterruptedDownload();
   }
 
   private static async getAllDownloads() {
