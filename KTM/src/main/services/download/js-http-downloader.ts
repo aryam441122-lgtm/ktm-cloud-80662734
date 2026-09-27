@@ -81,6 +81,7 @@ export class JsHttpDownloader {
   private bytesAtLastSpeedUpdate = 0;
   private isDownloading = false;
   private currentRun: Promise<void> | null = null;
+  private wakeRetryDelay: (() => void) | null = null;
 
   private retryCount = 0;
   private statusRetryCount = 0;
@@ -368,7 +369,17 @@ export class JsHttpDownloader {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.wakeRetryDelay = null;
+        resolve();
+      }, ms);
+      this.wakeRetryDelay = () => {
+        clearTimeout(timer);
+        this.wakeRetryDelay = null;
+        resolve();
+      };
+    });
   }
 
   private resetThrottleWindow(): void {
@@ -902,6 +913,7 @@ export class JsHttpDownloader {
   pauseDownload(): void {
     logger.log("[JsHttpDownloader] Pausing download");
     this.isPaused = true;
+    this.wakeRetryDelay?.();
     this.pendingReadSince = null;
     this.stopStallDetection();
     if (this.abortController) {
@@ -914,6 +926,7 @@ export class JsHttpDownloader {
   cancelDownload(deleteFile = true): void {
     logger.log("[JsHttpDownloader] Cancelling download");
     this.isPaused = true;
+    this.wakeRetryDelay?.();
     this.pendingReadSince = null;
     this.stopStallDetection();
 
