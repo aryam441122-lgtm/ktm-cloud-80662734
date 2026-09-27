@@ -1847,16 +1847,4 @@ const reportNetworkStatus = (online: boolean, switched = false) => {
 if (globalThis.window !== undefined) {
   globalThis.addEventListener("online", () => reportNetworkStatus(true, true));
   globalThis.addEventListener("offline", () => reportNetworkStatus(false));
-
-  const connection = (
-    navigator as Navigator & {
-      connection?: {
-        addEventListener?: (type: string, listener: () => void) => void;
-      };
-    }
-  ).connection;
-
-  connection?.addEventListener?.("change", () =>
-    reportNetworkStatus(navigator.onLine, true)
-  );
 }

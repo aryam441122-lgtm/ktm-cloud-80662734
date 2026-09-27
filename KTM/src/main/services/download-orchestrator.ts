@@ -66,13 +66,11 @@ function withInsertedId(ids: string[], id: string, targetIndex?: number) {
   return nextIds;
 }
 
-const NO_INTERNET_GRACE_MS = 15000;
 const RECONNECT_DEBOUNCE_MS = 2000;
 
 export class DownloadOrchestrator {
   private static isOnline = true;
   private static interruptedByNetwork: { shop: GameShop; objectId: string } | null = null;
-  private static reconnectGraceTimer: NodeJS.Timeout | null = null;
   private static lastReconnectAt = 0;
 
   static onNetworkStatusChanged(payload: {
@@ -83,7 +81,6 @@ export class DownloadOrchestrator {
 
     if (!DownloadManager.isJsDownloadActive) {
       this.isOnline = online;
-      this.clearReconnectGrace();
       if (online) void this.resumeNetworkInterruptedDownload();
       return;
     }
@@ -96,25 +93,10 @@ export class DownloadOrchestrator {
       }
       this.isOnline = false;
       DownloadManager.notifyReconnecting(true);
-
-      if (!this.reconnectGraceTimer) {
-        this.reconnectGraceTimer = setTimeout(() => {
-          this.reconnectGraceTimer = null;
-          if (this.isOnline) return;
-
-          if (!DownloadManager.isActiveDownloadReconnecting()) {
-            this.isOnline = true;
-            return;
-          }
-
-          void this.stopActiveDownloadForNoNetwork();
-        }, NO_INTERNET_GRACE_MS);
-      }
       return;
     }
 
     this.isOnline = true;
-    this.clearReconnectGrace();
 
     const now = Date.now();
     if (now - this.lastReconnectAt < RECONNECT_DEBOUNCE_MS) return;
@@ -145,31 +127,6 @@ export class DownloadOrchestrator {
     } catch (error) {
       logger.warn("[DownloadOrchestrator] Network recovery could not resume download", error);
     }
-  }
-
-  private static clearReconnectGrace() {
-    if (this.reconnectGraceTimer) {
-      clearTimeout(this.reconnectGraceTimer);
-      this.reconnectGraceTimer = null;
-    }
-  }
-
-  private static async stopActiveDownloadForNoNetwork() {
-    const downloadId = DownloadManager.getActiveDownloadId();
-    if (!downloadId) return;
-
-    const download = await downloadsSublevel.get(downloadId).catch(() => null);
-    if (!download) return;
-
-    logger.log(
-      "[DownloadOrchestrator] No connection after the grace window; pausing the download"
-    );
-    this.interruptedByNetwork = { shop: download.shop, objectId: download.objectId };
-    await this.pauseDownload(download, {
-      reason: "paused",
-      startNextQueued: false,
-    });
-    if (this.isOnline) void this.resumeNetworkInterruptedDownload();
   }
 
   private static async getAllDownloads() {

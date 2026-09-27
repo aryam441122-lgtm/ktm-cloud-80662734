@@ -288,19 +288,28 @@ export class JsHttpDownloader {
           [401, 403, 404, 410].includes(err.statusCode)) ||
           err.message.includes("returned a web page"))
     );
-    if ((isRetryable || refreshableError) && this.retryCount < MAX_RETRY_ATTEMPTS) {
+    const canRetry =
+      (isRetryable || refreshableError) &&
+      (Boolean(this.currentOptions?.refreshUrl) ||
+        this.retryCount < MAX_RETRY_ATTEMPTS);
+
+    if (canRetry) {
       this.retryCount++;
       this.isReconnecting = true;
       this.downloadSpeed = 0;
       const delay = Math.min(
-        INITIAL_RETRY_DELAY_MS * Math.pow(2, this.retryCount - 1),
+        INITIAL_RETRY_DELAY_MS *
+          Math.pow(2, Math.min(this.retryCount - 1, MAX_RETRY_ATTEMPTS - 1)),
         MAX_RETRY_DELAY_MS
       );
 
       const reason = wasStallRetry ? "stall detected" : err.message;
+      const retryLimit = this.currentOptions?.refreshUrl
+        ? "automatic"
+        : MAX_RETRY_ATTEMPTS;
       logger.log(
         `[JsHttpDownloader] Retryable error (${reason}). ` +
-          `Retry ${this.retryCount}/${MAX_RETRY_ATTEMPTS} in ${delay}ms`
+          `Retry ${this.retryCount}/${retryLimit} in ${delay}ms`
       );
 
       await this.sleep(delay);
@@ -872,17 +881,9 @@ export class JsHttpDownloader {
   private handleDownloadError(err: Error): void {
     this.isReconnecting = false;
     this.resetRecoveryState();
-    if (
-      err.name === "AbortError" ||
-      (err as NodeJS.ErrnoException).code === "ERR_STREAM_PREMATURE_CLOSE"
-    ) {
-      logger.log("[JsHttpDownloader] Download aborted");
-      this.status = "paused";
-    } else {
-      logger.error("[JsHttpDownloader] Download error:", err);
-      this.status = "error";
-      throw err;
-    }
+    logger.error("[JsHttpDownloader] Download error:", err);
+    this.status = "error";
+    throw err;
   }
 
   async waitForStop(): Promise<void> {
