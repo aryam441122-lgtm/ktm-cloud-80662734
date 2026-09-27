@@ -138,7 +138,7 @@ export class DownloadOrchestrator {
     }
 
     try {
-      const resumed = await this.resumeDownload(interrupted.shop, interrupted.objectId);
+      const resumed = await this.resumeDownload(interrupted.shop, interrupted.objectId, "interruptActive", true);
       if (resumed && this.interruptedByNetwork === interrupted) {
         this.interruptedByNetwork = null;
       }
@@ -440,10 +440,11 @@ export class DownloadOrchestrator {
   static async resumeDownload(
     shop: GameShop,
     objectId: string,
-    strategy: ResumeDownloadStrategy = "interruptActive"
+    strategy: ResumeDownloadStrategy = "interruptActive",
+    automatic = false
   ) {
     // A manual resume supersedes the pending automatic network recovery.
-    if (this.interruptedByNetwork?.shop === shop &&
+    if (!automatic && this.interruptedByNetwork?.shop === shop &&
         this.interruptedByNetwork.objectId === objectId) {
       this.interruptedByNetwork = null;
     }
