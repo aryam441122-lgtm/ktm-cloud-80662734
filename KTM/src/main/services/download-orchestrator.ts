@@ -138,8 +138,10 @@ export class DownloadOrchestrator {
     }
 
     try {
-      await this.resumeDownload(interrupted.shop, interrupted.objectId);
-      this.interruptedByNetwork = null;
+      const resumed = await this.resumeDownload(interrupted.shop, interrupted.objectId);
+      if (resumed && this.interruptedByNetwork === interrupted) {
+        this.interruptedByNetwork = null;
+      }
     } catch (error) {
       logger.warn("[DownloadOrchestrator] Network recovery could not resume download", error);
     }
@@ -440,6 +442,11 @@ export class DownloadOrchestrator {
     objectId: string,
     strategy: ResumeDownloadStrategy = "interruptActive"
   ) {
+    // A manual resume supersedes the pending automatic network recovery.
+    if (this.interruptedByNetwork?.shop === shop &&
+        this.interruptedByNetwork.objectId === objectId) {
+      this.interruptedByNetwork = null;
+    }
     const download = await this.getDownload(shop, objectId);
 
     if (
