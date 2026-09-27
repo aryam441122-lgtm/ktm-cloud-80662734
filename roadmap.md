@@ -2,3 +2,4 @@
 - [x] Make stalled requests and manual resume recover promptly and safely.
 - [x] Restore interrupted downloads automatically when connectivity returns.
 - [x] Validate edited launcher TypeScript syntax and GoFile wiring; desktop runtime verification requires the launcher environment.
+- [x] Prevent network-quality changes and transient GoFile disconnects from turning active downloads into paused downloads.
